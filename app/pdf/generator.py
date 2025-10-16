@@ -59,8 +59,8 @@ class PDFGenerator:
         self.dados_proposta = dados
         
         # Página 1: Capa (será desenhada via callback)
-        # Adicionar espaço em branco para forçar página
-        elements.append(Spacer(1, 25*cm))
+        # Adicionar apenas um parágrafo vazio para criar a primeira página
+        elements.append(Paragraph("", styles['Normal']))
         elements.append(PageBreak())
         
         # Página com Gráfico Payback
@@ -471,5 +471,3 @@ if __name__ == "__main__":
         f.write(pdf_bytes)
     
     print("PDF gerado: proposta_teste.pdf")
-
-
