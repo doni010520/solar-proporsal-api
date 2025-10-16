@@ -32,6 +32,9 @@ class PDFGenerator:
         self.logos_fornecedores = self.assets_path / "logos_fornecedores.png"
         self.assinatura_gabriel = self.assets_path / "assinatura_gabriel.png"
         
+        # Dados da proposta (será preenchido ao criar)
+        self.dados_proposta = {}
+        
         # Cores
         self.cor_amarela = colors.HexColor('#FDB913')  # Amarelo LEVESOL
         self.cor_azul_escuro = colors.HexColor('#2C5F7E')  # Azul tabelas
@@ -52,12 +55,13 @@ class PDFGenerator:
         elements = []
         styles = self._criar_estilos()
         
-        # Página 1: Capa com imagem de fundo
-        elements.extend(self._criar_capa(dados, styles))
-        elements.append(PageBreak())
+        # Guardar dados para usar na capa
+        self.dados_proposta = dados
         
-        # Páginas seguintes: conteúdo técnico e financeiro
-        # (aqui você pode adicionar mais páginas conforme necessário)
+        # Página 1: Capa (será desenhada via callback)
+        # Adicionar espaço em branco para forçar página
+        elements.append(Spacer(1, 25*cm))
+        elements.append(PageBreak())
         
         # Página com Gráfico Payback
         elements.extend(self._criar_pagina_payback(dados, styles))
@@ -70,8 +74,8 @@ class PDFGenerator:
         # Página final: Prazos e Assinatura
         elements.extend(self._criar_pagina_prazos(dados, styles))
         
-        # Gerar PDF com rodapé em todas as páginas
-        doc.build(elements, onFirstPage=self._adicionar_rodape, onLaterPages=self._adicionar_rodape)
+        # Gerar PDF com capa na primeira página e rodapé nas demais
+        doc.build(elements, onFirstPage=self._desenhar_capa, onLaterPages=self._adicionar_rodape)
         buffer.seek(0)
         return buffer.getvalue()
     
@@ -112,25 +116,32 @@ class PDFGenerator:
         
         return styles
     
-    def _criar_capa(self, dados: Dict, styles):
-        """Cria capa com imagem de fundo"""
-        elements = []
+    def _desenhar_capa(self, canvas_obj, doc):
+        """Desenha a capa na primeira página usando canvas"""
+        canvas_obj.saveState()
         
-        # Verificar se imagem de fundo existe
+        # Desenhar imagem de fundo (tamanho A4 completo)
         if self.capa_background.exists():
-            # Imagem de fundo em tamanho A4
-            img_capa = Image(str(self.capa_background), width=21*cm, height=29.7*cm)
-            elements.append(img_capa)
-        else:
-            # Fallback: texto simples
-            elements.append(Paragraph("LEVESOL", styles['TituloCapa']))
-            elements.append(Paragraph("ENERGIA SOLAR FOTOVOLTAICA", styles['Normal']))
+            canvas_obj.drawImage(
+                str(self.capa_background),
+                0, 0,  # Posição (canto inferior esquerdo)
+                width=self.width,
+                height=self.height,
+                preserveAspectRatio=True,
+                anchor='c'
+            )
         
-        # Sobrepor textos na capa
-        # Nota: Como a imagem já tem os textos, não precisamos adicionar mais nada
-        # Se quiser sobrepor texto dinâmico, use posicionamento absoluto com canvas
+        # Desenhar textos dinâmicos sobre a imagem
+        # Nota: A imagem já contém a maioria dos textos fixos
+        # Aqui podemos adicionar nome do cliente e número da proposta se necessário
         
-        return elements
+        # Exemplo (descomente se quiser sobrepor texto):
+        # canvas_obj.setFont('Helvetica-Bold', 16)
+        # canvas_obj.setFillColor(colors.HexColor('#333333'))
+        # canvas_obj.drawCentredString(self.width/2, 18*cm, self.dados_proposta['cliente']['nome'])
+        # canvas_obj.drawCentredString(self.width/2, 16*cm, self.dados_proposta['numero_proposta'])
+        
+        canvas_obj.restoreState()
     
     def _criar_capa_com_textos(self, canvas_obj, dados: Dict):
         """Método alternativo para adicionar textos sobre a imagem da capa"""
@@ -453,12 +464,10 @@ if __name__ == "__main__":
         ]
     }
     
-    generator = PDFGeneratorLevesol()
+    generator = PDFGenerator()
     pdf_bytes = generator.criar_proposta(dados_teste)
     
     with open("proposta_teste.pdf", "wb") as f:
         f.write(pdf_bytes)
     
     print("PDF gerado: proposta_teste.pdf")
-
-
