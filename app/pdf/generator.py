@@ -1,25 +1,44 @@
 from reportlab.lib.pagesizes import A4
-from reportlab.lib.units import cm
+from reportlab.lib.units import cm, mm
 from reportlab.lib import colors
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
+from reportlab.platypus import (
+    SimpleDocTemplate, Table, TableStyle, Paragraph, 
+    Spacer, PageBreak, Image, KeepTogether
+)
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
+from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT, TA_JUSTIFY
 from reportlab.pdfgen import canvas
 from datetime import datetime
-from typing import Dict
+from typing import Dict, List
+from pathlib import Path
 import io
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
+import numpy as np
 
 
-class PDFGenerator:
+class PDFGeneratorLevesol:
+    """Gerador de PDF no padrão LEVESOL"""
+    
     def __init__(self):
         self.width, self.height = A4
         self.margin = 2 * cm
         
+        # Caminhos das imagens
+        self.assets_path = Path(__file__).parent / "assets"
+        self.capa_background = self.assets_path / "capa_background.png"
+        self.logos_fornecedores = self.assets_path / "logos_fornecedores.png"
+        self.assinatura_gabriel = self.assets_path / "assinatura_gabriel.png"
+        
+        # Cores
+        self.cor_amarela = colors.HexColor('#FDB913')  # Amarelo LEVESOL
+        self.cor_azul_escuro = colors.HexColor('#2C5F7E')  # Azul tabelas
+        self.cor_cinza = colors.HexColor('#666666')
+        
     def criar_proposta(self, dados: Dict) -> bytes:
-        """
-        Cria PDF da proposta completa
-        Retorna bytes do PDF
-        """
+        """Cria PDF da proposta completa no padrão LEVESOL"""
         buffer = io.BytesIO()
         doc = SimpleDocTemplate(
             buffer,
@@ -27,32 +46,32 @@ class PDFGenerator:
             rightMargin=self.margin,
             leftMargin=self.margin,
             topMargin=self.margin,
-            bottomMargin=self.margin
+            bottomMargin=2.5*cm  # Mais espaço para rodapé
         )
         
-        # Elementos do PDF
         elements = []
-        
-        # Estilos
         styles = self._criar_estilos()
         
-        # Página 1: Capa
+        # Página 1: Capa com imagem de fundo
         elements.extend(self._criar_capa(dados, styles))
         elements.append(PageBreak())
         
-        # Página 2: Dados do cliente e sistema
-        elements.extend(self._criar_pagina_dados(dados, styles))
+        # Páginas seguintes: conteúdo técnico e financeiro
+        # (aqui você pode adicionar mais páginas conforme necessário)
+        
+        # Página com Gráfico Payback
+        elements.extend(self._criar_pagina_payback(dados, styles))
         elements.append(PageBreak())
         
-        # Página 3: Economia de energia
-        elements.extend(self._criar_pagina_economia(dados, styles))
+        # Página Lista de Serviços
+        elements.extend(self._criar_lista_servicos(dados, styles))
         elements.append(PageBreak())
         
-        # Página 4: Análise financeira
-        elements.extend(self._criar_pagina_financeira(dados, styles))
+        # Página final: Prazos e Assinatura
+        elements.extend(self._criar_pagina_prazos(dados, styles))
         
-        # Gerar PDF
-        doc.build(elements)
+        # Gerar PDF com rodapé em todas as páginas
+        doc.build(elements, onFirstPage=self._adicionar_rodape, onLaterPages=self._adicionar_rodape)
         buffer.seek(0)
         return buffer.getvalue()
     
@@ -60,234 +79,386 @@ class PDFGenerator:
         """Cria estilos personalizados"""
         styles = getSampleStyleSheet()
         
-        # Título principal
+        # Título capa
         styles.add(ParagraphStyle(
-            name='TituloPrincipal',
+            name='TituloCapa',
             parent=styles['Heading1'],
-            fontSize=24,
-            textColor=colors.HexColor('#1e3a8a'),
-            alignment=TA_CENTER,
-            spaceAfter=30
-        ))
-        
-        # Subtítulo
-        styles.add(ParagraphStyle(
-            name='Subtitulo',
-            parent=styles['Heading2'],
             fontSize=18,
-            textColor=colors.HexColor('#3b82f6'),
-            spaceAfter=12
+            textColor=colors.HexColor('#333333'),
+            alignment=TA_CENTER,
+            spaceAfter=10,
+            fontName='Helvetica-Bold'
         ))
         
-        # Seção
+        # Título seção com borda amarela
         styles.add(ParagraphStyle(
-            name='Secao',
-            parent=styles['Heading2'],
-            fontSize=16,
-            textColor=colors.white,
-            backColor=colors.HexColor('#3b82f6'),
+            name='TituloSecaoAmarela',
+            fontSize=18,
+            textColor=colors.HexColor('#2C5F7E'),
             alignment=TA_CENTER,
-            spaceAfter=20,
+            spaceAfter=10,
             spaceBefore=10,
-            leftIndent=10,
-            rightIndent=10
+            fontName='Helvetica-Bold'
+        ))
+        
+        # Texto normal
+        styles.add(ParagraphStyle(
+            name='TextoNormal',
+            fontSize=10,
+            textColor=colors.black,
+            alignment=TA_LEFT,
+            spaceAfter=5
         ))
         
         return styles
     
     def _criar_capa(self, dados: Dict, styles):
-        """Cria página de capa"""
+        """Cria capa com imagem de fundo"""
         elements = []
         
-        # Logo LEVESOL (texto por enquanto)
-        titulo = Paragraph("LEVESOL", styles['TituloPrincipal'])
-        elements.append(titulo)
+        # Verificar se imagem de fundo existe
+        if self.capa_background.exists():
+            # Imagem de fundo em tamanho A4
+            img_capa = Image(str(self.capa_background), width=21*cm, height=29.7*cm)
+            elements.append(img_capa)
+        else:
+            # Fallback: texto simples
+            elements.append(Paragraph("LEVESOL", styles['TituloCapa']))
+            elements.append(Paragraph("ENERGIA SOLAR FOTOVOLTAICA", styles['Normal']))
         
-        subtitulo = Paragraph("ENERGIA SOLAR FOTOVOLTAICA", styles['Subtitulo'])
-        elements.append(subtitulo)
-        
-        elements.append(Spacer(1, 3*cm))
-        
-        # Informações da proposta
-        proposta_texto = f"""
-        <para align=center fontSize=16>
-        <b>PROPOSTA COMERCIAL</b><br/>
-        {dados['numero_proposta']}<br/><br/>
-        ANEXO I<br/>
-        {dados['cliente']['nome']}<br/><br/>
-        (14) 99893-7738
-        </para>
-        """
-        elements.append(Paragraph(proposta_texto, styles['Normal']))
+        # Sobrepor textos na capa
+        # Nota: Como a imagem já tem os textos, não precisamos adicionar mais nada
+        # Se quiser sobrepor texto dinâmico, use posicionamento absoluto com canvas
         
         return elements
     
-    def _criar_pagina_dados(self, dados: Dict, styles):
-        """Cria página com dados do cliente e sistema"""
-        elements = []
-        
-        # Título
-        elements.append(Paragraph("Proposta Comercial", styles['Secao']))
-        elements.append(Paragraph("Sistema Fotovoltaico On-grid", styles['Subtitulo']))
-        elements.append(Spacer(1, 1*cm))
-        
-        # Tabela de dados do cliente
-        elements.append(Paragraph("PROPOSTA COMERCIAL", styles['Subtitulo']))
-        
-        dados_cliente = [
-            ["CLIENTE", dados['cliente']['nome']],
-            ["CPF/CNPJ", dados['cliente']['cpf_cnpj']],
-            ["ENDEREÇO", dados['cliente']['endereco']],
-            ["CIDADE", dados['cliente']['cidade']]
-        ]
-        
-        table_cliente = Table(dados_cliente, colWidths=[6*cm, 10*cm])
-        table_cliente.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (0, -1), colors.HexColor('#3b82f6')),
-            ('TEXTCOLOR', (0, 0), (0, -1), colors.white),
-            ('BACKGROUND', (1, 0), (1, -1), colors.HexColor('#e0f2fe')),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black),
-            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, -1), 10),
-            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-            ('LEFTPADDING', (0, 0), (-1, -1), 10),
-            ('RIGHTPADDING', (0, 0), (-1, -1), 10),
-        ]))
-        elements.append(table_cliente)
-        elements.append(Spacer(1, 1*cm))
-        
-        # Dados do perfil de consumo
-        elements.append(Paragraph("DADOS DO PERFIL DE CONSUMO DO CLIENTE", styles['Subtitulo']))
-        
-        dados_consumo = [
-            ["CONCESSIONÁRIA", dados.get('concessionaria', 'CPFL')],
-            ["TIPO DE FORNECIMENTO", dados['tipo_fornecimento'].capitalize()],
-            ["TENSÃO", dados.get('tensao', '220V')],
-            ["ÍNDICE DE RADIAÇÃO (KW/m²)", str(dados.get('radiacao_solar', 5))],
-            ["CONSUMO MÉDIO ATUAL (KWH)", str(int(dados['consumo']['consumo_medio_mensal']))],
-            ["GERAÇÃO MÉDIA MENSAL (KWH)", str(int(dados['sistema']['geracao_media_mensal_kwh']))],
-            ["VALOR MÉDIO MENSAL DA CONTA", f"R$ {dados['financeiro']['valor_conta_atual_mensal']:.2f}"]
-        ]
-        
-        table_consumo = Table(dados_consumo, colWidths=[8*cm, 8*cm])
-        table_consumo.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (0, -1), colors.HexColor('#3b82f6')),
-            ('TEXTCOLOR', (0, 0), (0, -1), colors.white),
-            ('BACKGROUND', (1, 0), (1, -1), colors.HexColor('#e0f2fe')),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black),
-            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, -1), 10),
-            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-            ('LEFTPADDING', (0, 0), (-1, -1), 10),
-        ]))
-        elements.append(table_consumo)
-        elements.append(Spacer(1, 1*cm))
-        
-        # Sistema proposto
-        elements.append(Paragraph("SISTEMA FOTOVOLTAICO PROPOSTO", styles['Subtitulo']))
-        
-        dados_sistema = [
-            ["NÚMERO DE MÓDULOS FOTOVOLTAICOS (un.)", str(dados['sistema']['num_modulos'])],
-            ["POTÊNCIA TOTAL DO SISTEMA FOTOVOLTAICO (kWp)", str(dados['sistema']['potencia_kwp'])],
-            ["ÁREA NECESSÁRIA (m²)", str(int(dados['sistema']['area_necessaria_m2']))]
-        ]
-        
-        table_sistema = Table(dados_sistema, colWidths=[10*cm, 6*cm])
-        table_sistema.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (0, -1), colors.HexColor('#3b82f6')),
-            ('TEXTCOLOR', (0, 0), (0, -1), colors.white),
-            ('BACKGROUND', (1, 0), (1, -1), colors.HexColor('#e0f2fe')),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black),
-            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, -1), 10),
-            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-            ('LEFTPADDING', (0, 0), (-1, -1), 10),
-        ]))
-        elements.append(table_sistema)
-        
-        return elements
+    def _criar_capa_com_textos(self, canvas_obj, dados: Dict):
+        """Método alternativo para adicionar textos sobre a imagem da capa"""
+        # Este método seria chamado via callback no build do PDF
+        # Por enquanto, vamos usar a imagem completa como está
+        pass
     
-    def _criar_pagina_economia(self, dados: Dict, styles):
-        """Cria página de economia de energia"""
-        elements = []
+    def _criar_grafico_payback(self, dados: Dict) -> io.BytesIO:
+        """Cria gráfico de payback (barras amarelas/laranjas)"""
+        # Dados de economia acumulada ao longo de 25 anos
+        anos = []
+        economia_acumulada = []
+        economia_acum = 0
         
-        elements.append(Paragraph("Economia de Energia", styles['Secao']))
-        elements.append(Spacer(1, 0.5*cm))
+        ano_inicial = 2025
+        for i, item in enumerate(dados['economia_por_ano']):
+            anos.append(item['ano'])
+            economia_acum += item['economia_mensal'] * 12
+            economia_acumulada.append(economia_acum)
         
-        # Texto explicativo
-        texto = Paragraph(
-            "Considerados reajustes anuais da tarifa de energia, em média 5% ao ano.",
-            styles['Normal']
-        )
-        elements.append(texto)
-        elements.append(Spacer(1, 1*cm))
+        # Criar gráfico
+        fig, ax = plt.subplots(figsize=(12, 6))
         
-        # Tabela de economia por ano
-        tabela_dados = [["ANO", "ECONOMIA MÉDIA DE ENERGIA MENSAL"]]
+        # Barras amarelas/laranjas
+        bars = ax.bar(anos, economia_acumulada, color='#FDB913', alpha=0.9, width=0.8)
         
-        for economia in dados['economia_por_ano']:
-            tabela_dados.append([
-                str(economia['ano']),
-                f"R$ {economia['economia_mensal']:.2f}"
-            ])
+        # Configurações do gráfico
+        ax.set_xlabel('Ano', fontsize=12, fontweight='bold')
+        ax.set_ylabel('Economia Acumulada (R$)', fontsize=12, fontweight='bold')
+        ax.set_title('Gráfico Payback', fontsize=14, fontweight='bold', color='#2C5F7E')
         
-        table = Table(tabela_dados, colWidths=[4*cm, 8*cm])
-        table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#3b82f6')),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, -1), 10),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black),
-            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f0f9ff')])
-        ]))
-        elements.append(table)
+        # Formato do eixo Y (moeda)
+        ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda x, p: f'R$ {x:,.2f}'))
         
-        return elements
+        # Grid
+        ax.grid(axis='y', alpha=0.3, linestyle='--')
+        ax.set_axisbelow(True)
+        
+        # Rotacionar labels do eixo X
+        plt.xticks(rotation=45, ha='right')
+        
+        plt.tight_layout()
+        
+        # Salvar em buffer
+        buffer = io.BytesIO()
+        plt.savefig(buffer, format='png', dpi=150, bbox_inches='tight')
+        buffer.seek(0)
+        plt.close()
+        
+        return buffer
     
-    def _criar_pagina_financeira(self, dados: Dict, styles):
-        """Cria página de análise financeira"""
+    def _criar_pagina_payback(self, dados: Dict, styles):
+        """Cria página com box de investimento e gráfico payback"""
         elements = []
         
-        elements.append(Paragraph("Análise Financeira", styles['Secao']))
-        elements.append(Spacer(1, 1*cm))
+        # Box Investimento
+        investimento_data = [[
+            Paragraph("<b>Investimento</b>", styles['Normal']),
+            Paragraph(f"<b>R$ {dados['financeiro']['investimento_total']:,.2f}</b>", styles['Normal'])
+        ]]
         
-        # Investimento
-        investimento_dados = [["Investimento", f"R$ {dados['financeiro']['investimento_total']:,.2f}"]]
-        
-        table_inv = Table(investimento_dados, colWidths=[8*cm, 8*cm])
+        table_inv = Table(investimento_data, colWidths=[8*cm, 8*cm])
         table_inv.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (0, 0), colors.HexColor('#3b82f6')),
-            ('BACKGROUND', (1, 0), (1, 0), colors.HexColor('#22c55e')),
-            ('TEXTCOLOR', (0, 0), (-1, -1), colors.white),
-            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, -1), 16),
+            ('GRID', (0, 0), (-1, -1), 1, self.cor_amarela),
+            ('LINEWIDTH', (0, 0), (-1, -1), 2),
+            ('FONTSIZE', (0, 0), (-1, -1), 14),
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-            ('BOX', (0, 0), (-1, -1), 2, colors.black),
+            ('TOPPADDING', (0, 0), (-1, -1), 12),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
         ]))
         elements.append(table_inv)
-        elements.append(Spacer(1, 0.5*cm))
         
+        # Nota sobre orçamento
         nota = Paragraph(
-            "*Esse é um orçamento inicial. O preço final é definido após visita técnica.",
+            "<i>*Esse é um orçamento inicial. O preço final é definido após visita técnica.</i>",
             styles['Normal']
         )
         elements.append(nota)
-        elements.append(Spacer(1, 2*cm))
+        elements.append(Spacer(1, 1*cm))
         
-        # Economia acumulada
-        economia_texto = f"""
-        <para align=center fontSize=14>
-        <b>ECONOMIA ACUMULADA EM 25 ANOS:</b><br/>
-        <font size=18 color=#22c55e>
-        R$ {dados['financeiro']['economia_25_anos']:,.2f}
-        </font>
-        </para>
-        """
-        elements.append(Paragraph(economia_texto, styles['Normal']))
+        # Gráfico Payback
+        try:
+            grafico_buffer = self._criar_grafico_payback(dados)
+            img_grafico = Image(grafico_buffer, width=17*cm, height=10*cm)
+            elements.append(img_grafico)
+        except Exception as e:
+            elements.append(Paragraph(f"<i>Erro ao gerar gráfico: {str(e)}</i>", styles['Normal']))
         
         return elements
+    
+    def _criar_lista_servicos(self, dados: Dict, styles):
+        """Cria página Lista de Serviços"""
+        elements = []
+        
+        # Box título
+        titulo_data = [[
+            Paragraph("<b>Lista de Serviços</b><br/><font size=12>Sistema Solar Fotovoltaico</font>", 
+                     styles['TituloSecaoAmarela'])
+        ]]
+        
+        table_titulo = Table(titulo_data, colWidths=[16*cm])
+        table_titulo.setStyle(TableStyle([
+            ('BOX', (0, 0), (-1, -1), 2, self.cor_amarela),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('TOPPADDING', (0, 0), (-1, -1), 15),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 15),
+        ]))
+        elements.append(table_titulo)
+        elements.append(Spacer(1, 0.5*cm))
+        
+        # Tabela de Descrição
+        descricao_data = [
+            [Paragraph("<b>DESCRIÇÃO</b>", styles['Normal'])],
+            [f"{dados['sistema']['num_modulos']} MÓDULOS FOTOVOLTAICOS RISEN SUNX HONOR 700W"],
+            [f"INVERSOR SOLAR DEYE {dados['sistema']['potencia_inversor']}KW"],
+            ["ESTRUTURA COMPLETA PARA MONTAGEM"],
+            ["PROTEÇÃO E CABEAMENTO CA/CC"],
+            ["HOMOLOGAÇÃO"],
+            ["INSTALAÇÃO"],
+            ["MONITORAMENTO"],
+            ["FRETE"]
+        ]
+        
+        table_desc = Table(descricao_data, colWidths=[16*cm])
+        table_desc.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (0, 0), self.cor_azul_escuro),
+            ('TEXTCOLOR', (0, 0), (0, 0), colors.white),
+            ('FONTNAME', (0, 0), (0, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+            ('TOPPADDING', (0, 0), (-1, -1), 8),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+        ]))
+        elements.append(table_desc)
+        elements.append(Spacer(1, 0.5*cm))
+        
+        # Box Garantia
+        garantia_data = [[
+            Paragraph("<b>Garantia de Material</b>", styles['TituloSecaoAmarela'])
+        ]]
+        
+        table_garantia_titulo = Table(garantia_data, colWidths=[16*cm])
+        table_garantia_titulo.setStyle(TableStyle([
+            ('BOX', (0, 0), (-1, -1), 2, self.cor_amarela),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('TOPPADDING', (0, 0), (-1, -1), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
+        ]))
+        elements.append(table_garantia_titulo)
+        
+        garantia_content = [[
+            Paragraph("<b>Inversores fotovoltaicos:</b> Garantia de 10 anos contra defeito de fabricação.", 
+                     styles['Normal']),
+            Paragraph("<b>Módulos fotovoltaicos:</b> Garantia de geração nominal de 30 anos e 12 anos de garantia contra defeito de fabricação.", 
+                     styles['Normal'])
+        ]]
+        
+        table_garantia_content = Table(garantia_content, colWidths=[8*cm, 8*cm])
+        table_garantia_content.setStyle(TableStyle([
+            ('BOX', (0, 0), (-1, -1), 2, self.cor_amarela),
+            ('GRID', (0, 0), (-1, -1), 1, self.cor_amarela),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('LEFTPADDING', (0, 0), (-1, -1), 10),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 10),
+            ('TOPPADDING', (0, 0), (-1, -1), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
+        ]))
+        elements.append(table_garantia_content)
+        elements.append(Spacer(1, 0.5*cm))
+        
+        # Logos dos fornecedores
+        if self.logos_fornecedores.exists():
+            img_logos = Image(str(self.logos_fornecedores), width=16*cm, height=4*cm)
+            elements.append(img_logos)
+        
+        return elements
+    
+    def _criar_pagina_prazos(self, dados: Dict, styles):
+        """Cria página de Prazos e Assinatura"""
+        elements = []
+        
+        # Box Prazos
+        titulo_prazos = [[Paragraph("<b>Prazos</b>", styles['TituloSecaoAmarela'])]]
+        table_titulo_prazos = Table(titulo_prazos, colWidths=[16*cm])
+        table_titulo_prazos.setStyle(TableStyle([
+            ('BOX', (0, 0), (-1, -1), 2, self.cor_amarela),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('TOPPADDING', (0, 0), (-1, -1), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
+        ]))
+        elements.append(table_titulo_prazos)
+        
+        # Texto dos prazos
+        texto_prazos = """
+        <b>PROPOSTA VÁLIDA POR 10 DIAS OU ENQUANTO DURAREM OS ESTOQUES.</b><br/>
+        <b>Entrega dos Equipamentos:</b> 30 a 60 dias após pagamento da entrada ou valor integral<br/>
+        <b>Instalação:</b> 7 a 15 dias após a entrega dos equipamentos<br/>
+        <b>Início de Funcionamento do Sistema:</b> o prazo de funcionamento do sistema pode variar em média de 30 a 60 dias a contar da assinatura desta Proposta, a depender única e exclusivamente da concessionária de energia local, conforme regras da Aneel.
+        """
+        
+        prazos_content = [[Paragraph(texto_prazos, styles['Normal'])]]
+        table_prazos = Table(prazos_content, colWidths=[16*cm])
+        table_prazos.setStyle(TableStyle([
+            ('BOX', (0, 0), (-1, -1), 2, self.cor_amarela),
+            ('LEFTPADDING', (0, 0), (-1, -1), 15),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 15),
+            ('TOPPADDING', (0, 0), (-1, -1), 15),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 15),
+        ]))
+        elements.append(table_prazos)
+        elements.append(Spacer(1, 1*cm))
+        
+        # Aceite
+        aceite_texto = Paragraph(
+            "<b>No aceite desta proposta, favor preencher e assinar os campos abaixo:</b>",
+            styles['Normal']
+        )
+        elements.append(aceite_texto)
+        elements.append(Spacer(1, 0.3*cm))
+        
+        # Local e Data
+        hoje = datetime.now()
+        local_data = Paragraph(
+            f"BAURU-SP, {hoje.strftime('%d/%m/%Y')}",
+            styles['Normal']
+        )
+        elements.append(local_data)
+        elements.append(Spacer(1, 1*cm))
+        
+        # Campos para preenchimento
+        campos_texto = """
+        _____________________________________________<br/>
+        Nome/Razão Social:<br/>
+        CPF/CNPJ:<br/>
+        RG:
+        """
+        elements.append(Paragraph(campos_texto, styles['Normal']))
+        elements.append(Spacer(1, 2*cm))
+        
+        # Responsável Técnico
+        responsavel_data = [[
+            Paragraph("_____________________________________________", styles['Normal'])
+        ]]
+        
+        if self.assinatura_gabriel.exists():
+            # Adicionar imagem da assinatura
+            img_assinatura = Image(str(self.assinatura_gabriel), width=5*cm, height=2*cm)
+            elements.append(img_assinatura)
+        
+        responsavel_texto = """
+        <b>GABRIEL SHAYEB</b><br/>
+        Diretor<br/>
+        Engenheiro Eletricista<br/>
+        Engenheiro de Segurança do Trabalho<br/>
+        CREA 5069575855
+        """
+        elements.append(Paragraph(responsavel_texto, styles['Normal']))
+        
+        return elements
+    
+    def _adicionar_rodape(self, canvas_obj, doc):
+        """Adiciona rodapé em todas as páginas"""
+        canvas_obj.saveState()
+        
+        # Linha separadora (opcional)
+        canvas_obj.setStrokeColor(colors.HexColor('#CCCCCC'))
+        canvas_obj.setLineWidth(0.5)
+        canvas_obj.line(2*cm, 2*cm, self.width - 2*cm, 2*cm)
+        
+        # Texto do rodapé
+        canvas_obj.setFont('Helvetica', 8)
+        canvas_obj.setFillColor(self.cor_cinza)
+        
+        rodape_texto = (
+            "LEVESOL LTDA CNPJ 44.075.186/0001-13\n"
+            "Avenida Nossa Senhora de Fátima, 11-15, Jardim América, CEP 17017-337, Bauru,\n"
+            "Contato: (14) 99893-7738 contato@levesol.com.br\n"
+            "www.levesol.com.br"
+        )
+        
+        # Desenhar cada linha do rodapé
+        linhas = rodape_texto.split('\n')
+        y_pos = 1.5*cm
+        for i, linha in enumerate(reversed(linhas)):
+            canvas_obj.drawCentredString(self.width / 2, y_pos + (i * 0.35*cm), linha)
+        
+        canvas_obj.restoreState()
+
+
+# Teste de geração
+if __name__ == "__main__":
+    # Dados de exemplo
+    dados_teste = {
+        "numero_proposta": "251037/2025",
+        "cliente": {
+            "nome": "HELDER FERNANDES DE AGUIAR",
+            "cpf_cnpj": "123.456.789-00",
+            "endereco": "Rua Teste, 123",
+            "cidade": "Bauru-SP"
+        },
+        "consumo": {
+            "consumo_medio_mensal": 700
+        },
+        "sistema": {
+            "num_modulos": 20,
+            "potencia_kwp": 14.0,
+            "potencia_inversor": 10,
+            "nome_inversor": "Inversor Solar Deye 10kW"
+        },
+        "financeiro": {
+            "investimento_total": 31900.00
+        },
+        "economia_por_ano": [
+            {"ano": 2025, "economia_mensal": 450.00},
+            {"ano": 2026, "economia_mensal": 472.50},
+            # ... dados dos 25 anos
+        ]
+    }
+    
+    generator = PDFGeneratorLevesol()
+    pdf_bytes = generator.criar_proposta(dados_teste)
+    
+    with open("proposta_teste.pdf", "wb") as f:
+        f.write(pdf_bytes)
+    
+    print("PDF gerado: proposta_teste.pdf")
+
+
