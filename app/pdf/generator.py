@@ -19,7 +19,7 @@ import matplotlib.ticker as ticker
 import numpy as np
 
 
-class PDFGeneratorLevesol:
+class PDFGenerator:
     """Gerador de PDF no padrão LEVESOL"""
     
     def __init__(self):
