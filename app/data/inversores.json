@@ -1,0 +1,21 @@
+{
+  "inversores": [
+    {"potencia_kw": 75, "nome": "Inversor 75kW"},
+    {"potencia_kw": 60, "nome": "Inversor 60kW"},
+    {"potencia_kw": 50, "nome": "Inversor 50kW"},
+    {"potencia_kw": 40, "nome": "Inversor 40kW"},
+    {"potencia_kw": 37.5, "nome": "Inversor 37.5kW"},
+    {"potencia_kw": 30, "nome": "Inversor 30kW"},
+    {"potencia_kw": 25, "nome": "Inversor 25kW"},
+    {"potencia_kw": 20, "nome": "Inversor 20kW"},
+    {"potencia_kw": 15, "nome": "Inversor 15kW"},
+    {"potencia_kw": 10, "nome": "Inversor 10kW"},
+    {"potencia_kw": 8, "nome": "Inversor 8kW"},
+    {"potencia_kw": 7.5, "nome": "Inversor 7.5kW"},
+    {"potencia_kw": 6, "nome": "Inversor 6kW"},
+    {"potencia_kw": 5, "nome": "Inversor 5kW"},
+    {"potencia_kw": 4, "nome": "Inversor 4kW"},
+    {"potencia_kw": 3, "nome": "Inversor 3kW"},
+    {"potencia_kw": 2, "nome": "Inversor 2kW"}
+  ]
+}

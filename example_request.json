@@ -1,0 +1,19 @@
+{
+  "cliente": {
+    "nome": "Clorisvaldo Destro",
+    "cpf_cnpj": "251.964.868-60",
+    "endereco": "Rua ABC, 234, Bairro Centro",
+    "cidade": "Ibitinga/SP",
+    "telefone": "5516996127474"
+  },
+  "consumo": 700,
+  "tipo_fornecimento": "bifasico",
+  "concessionaria": "CPFL Paulista",
+  "tensao": "220V",
+  "iluminacao_publica": 14.75,
+  "icms": 0.18,
+  "pis": 0.0099,
+  "cofins": 0.0463,
+  "radiacao_solar": 5.0,
+  "potencia_modulo": 700
+}
