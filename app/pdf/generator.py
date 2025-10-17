@@ -336,29 +336,30 @@ class PDFGenerator:
         c.setFillColor(colors.HexColor('#366092'))
         c.drawString(50, height - 50, "LEVESOL")
         
-        # Título com box amarelo
-        c.setFillColor(colors.HexColor('#FFD700'))
-        c.rect(50, height - 120, width - 100, 40, fill=1)
-        c.setFillColor(colors.HexColor('#366092'))
-        c.setFont("Helvetica-Bold", 18)
+        # Título sem box amarelo - usar verde escuro
+        c.setFillColor(colors.HexColor('#2E7D32'))
+        c.setFont("Helvetica-Bold", 20)
         c.drawCentredString(width/2, height - 100, "Economia de Energia")
         
         # Tabela de economia
-        y_pos = height - 170
+        y_pos = height - 150
         
-        # Área cinza para a tabela
-        c.setFillColor(colors.HexColor('#F0F0F0'))
-        c.rect(150, y_pos - 440, 300, 460, fill=1)
+        # Desenhar tabela com bordas
+        c.setStrokeColor(colors.HexColor('#2E7D32'))
+        c.setLineWidth(1)
         
-        # Cabeçalhos da tabela
-        c.setFillColor(colors.HexColor('#366092'))
-        c.setFont("Helvetica-Bold", 10)
-        c.drawString(200, y_pos, "ANO")
-        c.drawString(320, y_pos, "ECONOMIA MÉDIA DE")
-        c.drawString(330, y_pos - 12, "ENERGIA MENSAL")
+        # Cabeçalho da tabela
+        c.setFillColor(colors.HexColor('#E8F5E9'))
+        c.rect(150, y_pos, 300, 25, fill=1, stroke=1)
         
-        y_pos -= 30
-        c.setFont("Helvetica", 10)
+        # Texto do cabeçalho
+        c.setFillColor(colors.HexColor('#2E7D32'))
+        c.setFont("Helvetica-Bold", 11)
+        c.drawString(200, y_pos + 7, "ANO")
+        c.drawString(320, y_pos + 7, "ECONOMIA MÉDIA DE")
+        c.drawString(320, y_pos - 5, "ENERGIA MENSAL")
+        
+        y_pos -= 25
         
         # Dados de economia para 21 anos
         for i, item in enumerate(dados_payback[:21]):  # Limitar a 21 anos
@@ -371,24 +372,24 @@ class PDFGenerator:
             else:
                 c.setFillColor(colors.HexColor('#F5F5F5'))
             
-            c.rect(150, y_pos - 15, 300, 20, fill=1)
+            c.rect(150, y_pos, 300, 20, fill=1, stroke=1)
             
-            # Texto
+            # Texto do ano
             c.setFillColor(colors.black)
-            c.drawString(200, y_pos, str(ano))
+            c.setFont("Helvetica", 10)
+            c.drawString(200, y_pos + 5, str(ano))
             
-            # Economia em verde
-            c.setFillColor(colors.HexColor('#70AD47'))
+            # Economia em verde escuro
+            c.setFillColor(colors.HexColor('#2E7D32'))
             c.setFont("Helvetica-Bold", 10)
             economia_fmt = f"R$ {economia:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
-            c.drawString(330, y_pos, economia_fmt)
+            c.drawString(320, y_pos + 5, economia_fmt)
             
-            c.setFont("Helvetica", 10)
             y_pos -= 20
         
         # Nota no final
         c.setFont("Helvetica", 9)
-        c.setFillColor(colors.HexColor('#366092'))
+        c.setFillColor(colors.HexColor('#2E7D32'))
         c.drawCentredString(width/2, y_pos - 20, "Considerados reajustes anuais da tarifa de")
         c.drawCentredString(width/2, y_pos - 35, "energia, em média 5% ao ano.")
         
@@ -445,64 +446,79 @@ class PDFGenerator:
         # Adicionar fundo
         self.desenhar_fundo_interno(c, width, height)
         
-        c.setFillColor(colors.HexColor('#FFD700'))
-        c.rect(50, height - 100, width - 100, 40, fill=1)
-        c.setFillColor(colors.HexColor('#366092'))
+        # Título sem box amarelo - usar verde escuro
+        c.setFillColor(colors.HexColor('#2E7D32'))
         c.setFont("Helvetica-Bold", 20)
         c.drawCentredString(width/2, height - 80, "Retorno do Investimento")
-        c.drawCentredString(width/2, height - 110, "Payback")
+        c.setFont("Helvetica-Bold", 18)
+        c.drawCentredString(width/2, height - 105, "Payback")
         
         # Payback em destaque
-        c.setFont("Helvetica-Bold", 22)
-        c.setFillColor(colors.HexColor('#70AD47'))
+        c.setFont("Helvetica-Bold", 24)
+        c.setFillColor(colors.HexColor('#2E7D32'))
         payback_texto = f"{payback_anos} anos e {payback_meses} meses"
-        c.drawCentredString(width/2, height - 150, payback_texto)
+        c.drawCentredString(width/2, height - 140, payback_texto)
         
         # Tabela de retorno
+        y_pos = height - 180
+        
+        # Cabeçalho da tabela
+        c.setFillColor(colors.HexColor('#E8F5E9'))
+        c.rect(150, y_pos, 300, 25, fill=1, stroke=1)
+        
+        c.setFillColor(colors.HexColor('#2E7D32'))
         c.setFont("Helvetica-Bold", 11)
-        c.setFillColor(colors.HexColor('#366092'))
-        c.drawString(200, height - 190, "ANO")
-        c.drawString(350, height - 190, "COM REAJUSTE")
+        c.drawString(200, y_pos + 7, "ANO")
+        c.drawString(330, y_pos + 7, "COM REAJUSTE")
         
-        c.setStrokeColor(colors.HexColor('#366092'))
-        c.setLineWidth(1)
-        c.line(190, height - 195, 450, height - 195)
+        y_pos -= 25
         
-        c.setFont("Helvetica", 10)
-        y_pos = height - 215
-        
-        # Mostrar primeiros 21 anos
-        for item in dados_payback[:21]:  # Limitar a 21 anos
+        # Dados da tabela
+        for i, item in enumerate(dados_payback[:21]):  # Limitar a 21 anos
             ano = item["ano"]
             amortizacao = item["amortizacao"]
             
-            c.setFillColor(colors.black)
-            c.drawString(200, y_pos, str(ano))
+            # Alternar cores de fundo
+            if i % 2 == 0:
+                c.setFillColor(colors.white)
+            else:
+                c.setFillColor(colors.HexColor('#F5F5F5'))
             
+            c.setStrokeColor(colors.HexColor('#CCCCCC'))
+            c.rect(150, y_pos, 300, 20, fill=1, stroke=1)
+            
+            # Ano
+            c.setFillColor(colors.black)
+            c.setFont("Helvetica", 10)
+            c.drawString(200, y_pos + 5, str(ano))
+            
+            # Valor com cor baseada em positivo/negativo
             if amortizacao < 0:
                 valor_fmt = f"-R$ {abs(amortizacao):,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
                 c.setFillColor(colors.red)
             else:
                 valor_fmt = f"R$ {amortizacao:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
-                c.setFillColor(colors.HexColor('#70AD47'))
+                c.setFillColor(colors.HexColor('#2E7D32'))
             
-            c.drawString(350, y_pos, valor_fmt)
+            c.setFont("Helvetica-Bold", 10)
+            c.drawString(330, y_pos + 5, valor_fmt)
+            
             y_pos -= 20
             
             # Nova página se necessário
-            if y_pos < 100:
+            if y_pos < 150 and i < 20:  # Ainda tem mais dados
                 c.showPage()
                 self.desenhar_fundo_interno(c, width, height)
                 y_pos = height - 100
         
         # Caixa acumulado
-        if y_pos > 150:
-            c.setFont("Helvetica-Bold", 14)
-            c.setFillColor(colors.HexColor('#70AD47'))
-            c.drawCentredString(width/2, 120, "CAIXA ACUMULADO EM 21 ANOS:")
-            c.setFont("Helvetica-Bold", 18)
-            economia_fmt = f"R$ {economia_total:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
-            c.drawCentredString(width/2, 90, economia_fmt)
+        y_pos -= 30
+        c.setFont("Helvetica-Bold", 16)
+        c.setFillColor(colors.HexColor('#2E7D32'))
+        c.drawCentredString(width/2, y_pos, "CAIXA ACUMULADO EM 21 ANOS:")
+        c.setFont("Helvetica-Bold", 20)
+        economia_fmt = f"R$ {economia_total:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+        c.drawCentredString(width/2, y_pos - 30, economia_fmt)
         
         # Notas
         c.setFont("Helvetica", 9)
