@@ -232,16 +232,14 @@ class PDFGenerator:
         # Adicionar fundo
         self.desenhar_fundo_interno(c, width, height)
         
-        # Título com box
-        c.setFillColor(colors.HexColor('#FFD700'))
-        c.rect(50, height - 100, width - 100, 40, fill=1)
+        # Título sem box amarelo
         c.setFillColor(colors.HexColor('#366092'))
         c.setFont("Helvetica-Bold", 20)
         c.drawCentredString(width/2, height - 80, "Proposta Comercial")
         
         c.setFont("Helvetica", 14)
         c.setFillColor(colors.HexColor('#366092'))
-        c.drawCentredString(width/2, height - 120, "Sistema Fotovoltaico On-grid")
+        c.drawCentredString(width/2, height - 105, "Sistema Fotovoltaico On-grid")
         
         # Tabela PROPOSTA COMERCIAL
         y_pos = height - 160
@@ -355,9 +353,9 @@ class PDFGenerator:
         # Texto do cabeçalho
         c.setFillColor(colors.HexColor('#2E7D32'))
         c.setFont("Helvetica-Bold", 11)
-        c.drawString(200, y_pos + 7, "ANO")
-        c.drawString(320, y_pos + 7, "ECONOMIA MÉDIA DE")
-        c.drawString(320, y_pos - 5, "ENERGIA MENSAL")
+        c.drawString(200, y_pos + 6, "ANO")
+        c.drawString(300, y_pos + 11, "ECONOMIA MÉDIA DE")
+        c.drawString(310, y_pos + 2, "ENERGIA MENSAL")
         
         y_pos -= 25
         
@@ -405,8 +403,7 @@ class PDFGenerator:
         # Adicionar fundo
         self.desenhar_fundo_interno(c, width, height)
         
-        c.setFillColor(colors.HexColor('#FFD700'))
-        c.rect(50, height - 100, width - 100, 40, fill=1)
+        # Título sem quadro amarelo
         c.setFillColor(colors.HexColor('#366092'))
         c.setFont("Helvetica-Bold", 20)
         c.drawCentredString(width/2, height - 80, "Análise Financeira")
@@ -531,7 +528,132 @@ class PDFGenerator:
         c.drawCentredString(width/2, 25, "LEVESOL LTDA CNPJ 44.075.186/0001-11")
         c.drawCentredString(width/2, 15, "www.levesol.com.br")
         
+        c.showPage()
+        
+        # ========== PÁGINA 6: LISTA DE SERVIÇOS ==========
+        # Adicionar fundo
+        self.desenhar_fundo_interno(c, width, height)
+        
+        # Logo LEVESOL no topo
+        c.setFont("Helvetica-Bold", 24)
+        c.setFillColor(colors.HexColor('#366092'))
+        c.drawString(50, height - 50, "LEVESOL")
+        
+        # Título
+        c.setFillColor(colors.HexColor('#366092'))
+        c.setFont("Helvetica-Bold", 20)
+        c.drawCentredString(width/2, height - 100, "Lista de Serviços")
+        c.setFont("Helvetica", 14)
+        c.drawCentredString(width/2, height - 125, "Sistema Solar Fotovoltaico")
+        
+        # Tabela de serviços
+        y_pos = height - 160
+        
+        # Cabeçalho da tabela
+        c.setFillColor(colors.HexColor('#5B9BD5'))
+        c.rect(50, y_pos, width - 100, 30, fill=1)
+        c.setFillColor(colors.white)
+        c.setFont("Helvetica-Bold", 12)
+        c.drawCentredString(width/2, y_pos + 10, "DESCRIÇÃO")
+        
+        y_pos -= 30
+        
+        # Lista de serviços
+        servicos = [
+            "20 MÓDULOS FOTOVOLTAICOS RISEN SUNX HONOR 700W",
+            "1 INVERSOR SOLAR DEYE 10KW",
+            "ESTRUTURA COMPLETA PARA MONTAGEM",
+            "PROTEÇÃO E CABEMANETO CA/CC",
+            "HOMOLOGAÇÃO",
+            "INSTALAÇÃO",
+            "MONITORAMENTO",
+            "FRETE"
+        ]
+        
+        c.setFont("Helvetica", 11)
+        c.setFillColor(colors.black)
+        
+        for servico in servicos:
+            # Fundo alternado
+            if servicos.index(servico) % 2 == 0:
+                c.setFillColor(colors.white)
+            else:
+                c.setFillColor(colors.HexColor('#F5F5F5'))
+            
+            c.rect(50, y_pos, width - 100, 25, fill=1, stroke=0)
+            
+            # Texto
+            c.setFillColor(colors.black)
+            c.drawCentredString(width/2, y_pos + 8, servico)
+            y_pos -= 25
+        
+        # Garantia de Material - seção amarela
+        y_pos -= 30
+        c.setStrokeColor(colors.HexColor('#FFD700'))
+        c.setLineWidth(2)
+        c.rect(50, y_pos, width - 100, 60, fill=0, stroke=1)
+        
+        c.setFont("Helvetica-Bold", 12)
+        c.setFillColor(colors.HexColor('#366092'))
+        c.drawCentredString(width/2, y_pos + 45, "Garantia de Material")
+        
+        c.setFont("Helvetica", 10)
+        c.setFillColor(colors.black)
+        c.drawString(70, y_pos + 25, "Inversores fotovoltaicos: Garantia de")
+        c.drawString(70, y_pos + 12, "10 anos contra defeito de fabricação.")
+        
+        c.drawString(width/2 + 20, y_pos + 25, "Módulos fotovoltaicos: Garantia de geração")
+        c.drawString(width/2 + 20, y_pos + 12, "nominal de 30 anos e 12 anos de garantia")
+        c.drawString(width/2 + 20, y_pos - 1, "contra defeito de fabricação.")
+        
+        # Logos dos fornecedores
+        y_pos -= 80
+        try:
+            logos_path = os.path.join(self.assets_path, "logos_fornecedores.png")
+            if os.path.exists(logos_path):
+                c.drawImage(logos_path, 50, y_pos, width=width-100, height=80, preserveAspectRatio=True)
+        except:
+            # Se não houver imagem, listar os nomes
+            c.setFont("Helvetica", 9)
+            c.setFillColor(colors.HexColor('#666666'))
+            marcas = ["Growatt", "Solis", "JinKO", "Canadian", "SOFAR", "Deye", 
+                     "WEG", "HonorSolar", "HUAWEI", "Risen", "TrinaSolar"]
+            x_pos = 60
+            for marca in marcas:
+                c.drawString(x_pos, y_pos + 40, marca)
+                x_pos += 45
+                if x_pos > width - 100:
+                    x_pos = 60
+                    y_pos -= 15
+        
+        # Garantia de instalação
+        c.setFont("Helvetica-Bold", 11)
+        c.setFillColor(colors.HexColor('#366092'))
+        c.drawCentredString(width/2, 100, "GARANTIA DE 1 ANO DA INSTALAÇÃO ELÉTRICA")
+        
+        # Rodapé
+        c.setFont("Helvetica", 8)
+        c.setFillColor(colors.gray)
+        c.drawCentredString(width/2, 50, "LEVESOL LTDA CNPJ 44.075.186/0001-11")
+        c.drawCentredString(width/2, 40, "Avenida Nossa Senhora de Fátima, 11-15, Jardim América, CEP 17017-337, Bauru")
+        c.drawCentredString(width/2, 30, f"Contato: (14) 99893-7738 contato@levesol.com.br")
+        c.drawCentredString(width/2, 20, "www.levesol.com.br")
+        
         c.save()
         
         buffer.seek(0)
         return buffer.getvalue()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
