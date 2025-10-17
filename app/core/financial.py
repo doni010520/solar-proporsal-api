@@ -158,3 +158,21 @@ class FinancialAnalyzer:
         """Calcula economia total acumulada em 25 anos"""
         total = sum(item["economia_mensal"] * 12 for item in economia_por_ano)
         return round(total, 2)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
