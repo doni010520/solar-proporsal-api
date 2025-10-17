@@ -131,25 +131,24 @@ class PDFGenerator:
                 anchor='c'
             )
         
-        # Adicionar textos dinâmicos sobre a imagem
-        # Configurar cor do texto (preto/cinza escuro)
+        # Adicionar textos dinâmicos sobre a imagem (ABAIXO DA LOGO)
         canvas_obj.setFillColor(colors.HexColor('#333333'))
         
         # ANEXO I
         canvas_obj.setFont('Helvetica-Bold', 16)
-        canvas_obj.drawCentredString(self.width / 2, 23*cm, "ANEXO I")
+        canvas_obj.drawCentredString(self.width / 2, 17*cm, "ANEXO I")
         
         # Nome do Cliente
         canvas_obj.setFont('Helvetica-Bold', 16)
-        canvas_obj.drawCentredString(self.width / 2, 21.5*cm, self.dados_proposta['cliente']['nome'].upper())
+        canvas_obj.drawCentredString(self.width / 2, 15.5*cm, self.dados_proposta['cliente']['nome'].upper())
         
         # PROPOSTA COMERCIAL
         canvas_obj.setFont('Helvetica-Bold', 16)
-        canvas_obj.drawCentredString(self.width / 2, 20*cm, "PROPOSTA COMERCIAL")
+        canvas_obj.drawCentredString(self.width / 2, 14*cm, "PROPOSTA COMERCIAL")
         
         # Número da Proposta
         canvas_obj.setFont('Helvetica-Bold', 14)
-        canvas_obj.drawCentredString(self.width / 2, 18.8*cm, self.dados_proposta['numero_proposta'])
+        canvas_obj.drawCentredString(self.width / 2, 12.8*cm, self.dados_proposta['numero_proposta'])
         
         canvas_obj.restoreState()
     
@@ -481,5 +480,3 @@ if __name__ == "__main__":
         f.write(pdf_bytes)
     
     print("PDF gerado: proposta_teste.pdf")
-
-
