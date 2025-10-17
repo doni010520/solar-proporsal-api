@@ -5,6 +5,7 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, 
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
 from reportlab.pdfgen import canvas
+from reportlab.lib.utils import ImageReader
 import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.use('Agg')
@@ -13,12 +14,15 @@ from io import BytesIO
 import base64
 from datetime import datetime
 import re
+import os
 
 class PDFGenerator:
     def __init__(self):
         self.styles = getSampleStyleSheet()
         self._create_custom_styles()
-    
+        # Caminhos para os assets (ajuste conforme necessário)
+        self.assets_path = "app/pdf/assets/"
+        
     def _create_custom_styles(self):
         """Cria estilos customizados para o PDF"""
         self.styles.add(ParagraphStyle(
@@ -49,7 +53,6 @@ class PDFGenerator:
             if "Gráfico Payback" in item and item.get("col_2"):
                 # Limpar valores monetários
                 if isinstance(item.get("col_2"), str):
-                    # Remove R$, espaços e converte vírgula para ponto
                     valor_str = item["col_2"].replace("R$", "").replace(",", "").replace(" ", "")
                     try:
                         valor = float(valor_str)
@@ -111,7 +114,6 @@ class PDFGenerator:
     
     def gerar_grafico_payback(self, dados_payback):
         """Gera o gráfico de payback estilo LEVESOL"""
-        # Extrair dados
         anos = []
         amortizacao = []
         
@@ -119,28 +121,21 @@ class PDFGenerator:
             anos.append(item["ano"])
             amortizacao.append(item["amortizacao"])
         
-        # Criar figura
         fig, ax = plt.subplots(figsize=(10, 6))
         
-        # Definir cores para cada barra
         cores = ['#FF4444' if valor < 0 else '#FFD700' for valor in amortizacao]
         
-        # Criar gráfico de barras
         barras = ax.bar(anos, amortizacao, color=cores, width=0.7, edgecolor='none')
         
-        # Configurar título
         ax.set_title('Gráfico Payback', fontsize=14, fontweight='bold', pad=15)
         
-        # Configurar grid
         ax.grid(True, axis='y', alpha=0.3, linestyle='-', linewidth=0.5)
         ax.set_axisbelow(True)
         
-        # Configurar eixo Y
         y_min = min(amortizacao) * 1.1 if min(amortizacao) < 0 else 0
         y_max = max(amortizacao) * 1.1
         ax.set_ylim(y_min, y_max)
         
-        # Formatar valores do eixo Y
         def format_currency(x, p):
             if x == 0:
                 return 'R$ 0,00'
@@ -152,21 +147,16 @@ class PDFGenerator:
         from matplotlib.ticker import FuncFormatter
         ax.yaxis.set_major_formatter(FuncFormatter(format_currency))
         
-        # Configurar eixo X
         ax.set_xticks(anos)
         ax.set_xticklabels(anos, rotation=45, ha='right', fontsize=8)
         
-        # Adicionar linha horizontal em y=0
         ax.axhline(y=0, color='black', linewidth=0.8, alpha=0.5)
         
-        # Remover bordas superiores e direita
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
         
-        # Ajustar layout
         plt.tight_layout()
         
-        # Salvar em buffer
         buffer = BytesIO()
         plt.savefig(buffer, format='png', dpi=120, bbox_inches='tight', 
                     facecolor='white', edgecolor='none')
@@ -179,7 +169,6 @@ class PDFGenerator:
         """Calcula o período de payback"""
         for i, item in enumerate(dados_payback):
             if item["amortizacao"] > 0:
-                # Encontrou o ano de payback
                 if i > 0:
                     valor_anterior = dados_payback[i-1]["amortizacao"]
                     valor_atual = item["amortizacao"]
@@ -208,113 +197,137 @@ class PDFGenerator:
         c = canvas.Canvas(buffer, pagesize=A4)
         width, height = A4
         
-        # ========== PÁGINA 1: CAPA ==========
-        # Logo LEVESOL
-        c.setFont("Helvetica-Bold", 36)
-        c.setFillColor(colors.HexColor('#366092'))
-        c.drawCentredString(width/2, height - 100, "LEVESOL")
+        # ========== PÁGINA 1: CAPA COM IMAGEM DE FUNDO ==========
         
-        # Linha decorativa
-        c.setStrokeColor(colors.HexColor('#FFD700'))
-        c.setLineWidth(3)
-        c.line(100, height - 120, width - 100, height - 120)
+        # Tentar adicionar imagem de fundo se existir
+        try:
+            bg_path = os.path.join(self.assets_path, "capa_background.png")
+            if os.path.exists(bg_path):
+                c.drawImage(bg_path, 0, 0, width=width, height=height, preserveAspectRatio=False)
+        except:
+            # Se não conseguir carregar a imagem, usar fundo padrão
+            pass
         
-        # Título
-        c.setFont("Helvetica-Bold", 24)
-        c.setFillColor(colors.black)
-        c.drawCentredString(width/2, height/2 + 50, "PROPOSTA COMERCIAL")
-        c.drawCentredString(width/2, height/2, "SISTEMA FOTOVOLTAICO")
+        # Adicionar logo se existir
+        try:
+            logo_path = os.path.join(self.assets_path, "logos_fornecedores.png")
+            if os.path.exists(logo_path):
+                c.drawImage(logo_path, width/2 - 100, height - 200, width=200, height=80, preserveAspectRatio=True)
+        except:
+            # Se não houver logo, usar texto
+            c.setFont("Helvetica-Bold", 36)
+            c.setFillColor(colors.HexColor('#366092'))
+            c.drawCentredString(width/2, height - 100, "LEVESOL")
         
-        # Dados do cliente
+        # Texto da capa
+        c.setFillColor(colors.white)
+        c.setFont("Helvetica-Bold", 32)
+        c.drawCentredString(width/2, height/2 + 100, "ENERGIA SOLAR FOTOVOLTAICA")
+        
         c.setFont("Helvetica", 14)
-        y_pos = height/2 - 80
-        c.drawString(100, y_pos, f"Cliente: {dados['cliente']['nome']}")
-        c.drawString(100, y_pos - 25, f"Endereço: {dados['cliente']['endereco']}")
-        c.drawString(100, y_pos - 50, f"Cidade: {dados['cliente']['cidade']}")
-        if dados['cliente'].get('telefone'):
-            c.drawString(100, y_pos - 75, f"Telefone: {dados['cliente']['telefone']}")
+        c.drawCentredString(width/2, height/2 + 50, "(14) 99893-7738")
         
-        # Número da proposta
-        c.setFont("Helvetica", 12)
-        c.drawString(100, 100, f"Proposta Nº: {dados['numero_proposta']}")
-        c.drawString(100, 80, f"Data: {datetime.now().strftime('%d/%m/%Y')}")
+        c.setFont("Helvetica-Bold", 20)
+        c.drawCentredString(width/2, height/2 - 20, "ANEXO I")
         
-        # Rodapé
-        c.setFont("Helvetica", 10)
-        c.setFillColor(colors.gray)
-        c.drawCentredString(width/2, 40, "LEVESOL LTDA | CNPJ: 44.075.186/0001-11")
-        c.drawCentredString(width/2, 25, "Contato: (14) 99893-7738 | contato@levesol.com.br")
+        c.setFont("Helvetica-Bold", 18)
+        c.drawCentredString(width/2, height/2 - 60, dados['cliente']['nome'].upper())
+        
+        c.setFont("Helvetica-Bold", 16)
+        c.drawCentredString(width/2, height/2 - 100, "PROPOSTA COMERCIAL")
+        
+        c.setFont("Helvetica", 14)
+        c.drawCentredString(width/2, height/2 - 130, f"{dados['numero_proposta']}")
         
         c.showPage()
         
         # ========== PÁGINA 2: DADOS DO SISTEMA ==========
-        # Título
-        c.setFont("Helvetica-Bold", 20)
+        # Título com box
+        c.setFillColor(colors.HexColor('#FFD700'))
+        c.rect(50, height - 100, width - 100, 40, fill=1)
         c.setFillColor(colors.HexColor('#366092'))
-        c.setStrokeColor(colors.HexColor('#FFD700'))
-        c.setLineWidth(2)
-        c.rect(50, height - 100, width - 100, 40, fill=0)
+        c.setFont("Helvetica-Bold", 20)
         c.drawCentredString(width/2, height - 80, "Proposta Comercial")
         
-        c.setFont("Helvetica-Bold", 14)
+        c.setFont("Helvetica", 14)
+        c.setFillColor(colors.HexColor('#366092'))
         c.drawCentredString(width/2, height - 120, "Sistema Fotovoltaico On-grid")
         
-        # Tabela de dados do sistema
+        # Tabela PROPOSTA COMERCIAL
         y_pos = height - 160
-        
-        # Cabeçalho da seção
         c.setFillColor(colors.HexColor('#5B9BD5'))
         c.rect(50, y_pos, width - 100, 25, fill=1)
         c.setFillColor(colors.white)
-        c.setFont("Helvetica-Bold", 11)
-        c.drawString(60, y_pos + 8, "SISTEMA FOTOVOLTAICO PROPOSTO")
+        c.setFont("Helvetica-Bold", 10)
+        c.drawString(60, y_pos + 8, "PROPOSTA COMERCIAL")
         
-        # Dados do sistema
         y_pos -= 30
-        c.setFont("Helvetica", 10)
+        c.setFont("Helvetica", 9)
         c.setFillColor(colors.black)
         
-        dados_tabela = [
-            ("NÚMERO DE MÓDULOS:", f"{dados_sistema.get('num_modulos', 'N/A')} un."),
-            ("POTÊNCIA DO SISTEMA:", f"{dados_sistema.get('potencia_kwp', 'N/A')} kWp"),
-            ("ÁREA NECESSÁRIA:", f"{round(dados_sistema.get('area_total', 0), 1)} m²"),
-            ("GERAÇÃO MÉDIA MENSAL:", f"{round(dados_sistema.get('geracao_mensal', 0), 0)} kWh"),
-            ("GERAÇÃO MÉDIA ANUAL:", f"{round(dados_sistema.get('geracao_anual', 0), 0)} kWh"),
+        # Dados do cliente
+        dados_cliente = [
+            ("CLIENTE", dados['cliente']['nome'].upper()),
+            ("CPF/CNPJ", dados['cliente']['cpf_cnpj']),
+            ("ENDEREÇO", dados['cliente']['endereco']),
+            ("CIDADE", dados['cliente']['cidade'])
         ]
         
-        for label, valor in dados_tabela:
+        for label, valor in dados_cliente:
             c.drawString(60, y_pos, label)
-            c.drawString(300, y_pos, valor)
-            y_pos -= 25
+            c.drawString(200, y_pos, valor)
+            y_pos -= 20
         
-        # Economia
-        y_pos -= 20
+        # DADOS DO PERFIL DE CONSUMO
+        y_pos -= 10
         c.setFillColor(colors.HexColor('#5B9BD5'))
         c.rect(50, y_pos, width - 100, 25, fill=1)
         c.setFillColor(colors.white)
-        c.setFont("Helvetica-Bold", 11)
-        c.drawString(60, y_pos + 8, "ECONOMIA ESTIMADA")
+        c.setFont("Helvetica-Bold", 10)
+        c.drawString(60, y_pos + 8, "DADOS DO PERFIL DE CONSUMO DO CLIENTE")
         
         y_pos -= 30
-        c.setFont("Helvetica", 10)
+        c.setFont("Helvetica", 9)
         c.setFillColor(colors.black)
         
         conta_antes = dados_sistema.get('conta_antes', 0)
-        conta_depois = dados_sistema.get('conta_depois', 0)
-        economia_mensal = conta_antes - conta_depois
+        dados_consumo = [
+            ("CONCESSIONÁRIA", "CPFL"),
+            ("TIPO DE FORNECIMENTO", dados_sistema.get('tipo_fornecimento', 'Bifásico')),
+            ("TENSÃO", "220V"),
+            ("ÍNDICE DE RADIAÇÃO (kWh/m²)", "5.0"),
+            ("CONSUMO MÉDIO ATUAL (kWh)", f"{dados_sistema.get('consumo_atual', 0):.0f}"),
+            ("GERAÇÃO MÉDIA MENSAL (kWh)", f"{dados_sistema.get('geracao_mensal', 0):.0f}"),
+            ("VALOR MÉDIO MENSAL DA CONTA", f"R$ {conta_antes:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'))
+        ]
         
-        c.drawString(60, y_pos, "Valor médio da conta ANTES:")
-        c.drawString(300, y_pos, f"R$ {conta_antes:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'))
-        y_pos -= 25
+        for label, valor in dados_consumo:
+            c.drawString(60, y_pos, label)
+            c.drawString(300, y_pos, valor)
+            y_pos -= 20
         
-        c.drawString(60, y_pos, "Valor médio da conta DEPOIS:")
-        c.drawString(300, y_pos, f"R$ {conta_depois:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'))
-        y_pos -= 25
+        # SISTEMA FOTOVOLTAICO PROPOSTO
+        y_pos -= 10
+        c.setFillColor(colors.HexColor('#5B9BD5'))
+        c.rect(50, y_pos, width - 100, 25, fill=1)
+        c.setFillColor(colors.white)
+        c.setFont("Helvetica-Bold", 10)
+        c.drawString(60, y_pos + 8, "SISTEMA FOTOVOLTAICO PROPOSTO")
         
-        c.setFont("Helvetica-Bold", 11)
-        c.setFillColor(colors.HexColor('#70AD47'))
-        c.drawString(60, y_pos, "ECONOMIA MENSAL:")
-        c.drawString(300, y_pos, f"R$ {economia_mensal:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'))
+        y_pos -= 30
+        c.setFont("Helvetica", 9)
+        c.setFillColor(colors.black)
+        
+        dados_sfv = [
+            ("NÚMERO DE MÓDULOS FOTOVOLTAICOS (un.)", f"{dados_sistema.get('num_modulos', 0)}"),
+            ("POTÊNCIA TOTAL DO SISTEMA FOTOVOLTAICO (kWp)", f"{dados_sistema.get('potencia_kwp', 0)}"),
+            ("ÁREA NECESSÁRIA (m²)", f"{dados_sistema.get('area_total', 0):.0f}")
+        ]
+        
+        for label, valor in dados_sfv:
+            c.drawString(60, y_pos, label)
+            c.drawString(350, y_pos, valor)
+            y_pos -= 20
         
         # Rodapé
         c.setFont("Helvetica", 8)
@@ -325,12 +338,10 @@ class PDFGenerator:
         c.showPage()
         
         # ========== PÁGINA 3: ANÁLISE FINANCEIRA COM GRÁFICO ==========
-        # Título
-        c.setFont("Helvetica-Bold", 20)
+        c.setFillColor(colors.HexColor('#FFD700'))
+        c.rect(50, height - 100, width - 100, 40, fill=1)
         c.setFillColor(colors.HexColor('#366092'))
-        c.setStrokeColor(colors.HexColor('#FFD700'))
-        c.setLineWidth(2)
-        c.rect(50, height - 100, width - 100, 40, fill=0)
+        c.setFont("Helvetica-Bold", 20)
         c.drawCentredString(width/2, height - 80, "Análise Financeira")
         
         # Box com investimento
@@ -352,62 +363,53 @@ class PDFGenerator:
         # Gerar e inserir gráfico
         if dados_payback:
             grafico_buffer = self.gerar_grafico_payback(dados_payback)
-            from reportlab.lib.utils import ImageReader
             img = ImageReader(grafico_buffer)
             c.drawImage(img, 60, height - 520, width=480, height=280, preserveAspectRatio=True)
         
-        # Rodapé da página
+        # Rodapé
         c.setFont("Helvetica", 8)
         c.setFillColor(colors.gray)
         c.drawCentredString(width/2, 30, "LEVESOL LTDA CNPJ 44.075.186/0001-11")
-        c.drawCentredString(width/2, 20, "www.levesol.com.br")
+        c.drawCentredString(width/2, 20, "Avenida Nossa Senhora de Fátima, 11-15, Jardim América, CEP 17017-337, Bauru")
+        c.drawCentredString(width/2, 10, "Contato: (14) 99893-7738 contato@levesol.com.br | www.levesol.com.br")
         
         c.showPage()
         
         # ========== PÁGINA 4: RETORNO DO INVESTIMENTO ==========
-        # Título
+        c.setFillColor(colors.HexColor('#FFD700'))
+        c.rect(50, height - 100, width - 100, 40, fill=1)
+        c.setFillColor(colors.HexColor('#366092'))
         c.setFont("Helvetica-Bold", 20)
-        c.setFillColor(colors.HexColor('#366092'))
-        c.setStrokeColor(colors.HexColor('#FFD700'))
-        c.setLineWidth(2)
-        c.rect(50, height - 100, width - 100, 40, fill=0)
         c.drawCentredString(width/2, height - 80, "Retorno do Investimento")
-        
-        # Subtítulo Payback
-        c.setFont("Helvetica-Bold", 16)
-        c.setFillColor(colors.HexColor('#366092'))
-        c.drawCentredString(width/2, height - 130, "Payback")
+        c.drawCentredString(width/2, height - 110, "Payback")
         
         # Payback em destaque
         c.setFont("Helvetica-Bold", 22)
         c.setFillColor(colors.HexColor('#70AD47'))
         payback_texto = f"{payback_anos} anos e {payback_meses} meses"
-        c.drawCentredString(width/2, height - 165, payback_texto)
+        c.drawCentredString(width/2, height - 150, payback_texto)
         
-        # Cabeçalho da tabela
+        # Tabela de retorno
         c.setFont("Helvetica-Bold", 11)
         c.setFillColor(colors.HexColor('#366092'))
-        c.drawString(200, height - 210, "ANO")
-        c.drawString(350, height - 210, "COM REAJUSTE")
+        c.drawString(200, height - 190, "ANO")
+        c.drawString(350, height - 190, "COM REAJUSTE")
         
-        # Linha separadora
         c.setStrokeColor(colors.HexColor('#366092'))
         c.setLineWidth(1)
-        c.line(190, height - 215, 450, height - 215)
+        c.line(190, height - 195, 450, height - 195)
         
-        # Tabela de retorno (primeiros 10 anos)
         c.setFont("Helvetica", 10)
-        y_pos = height - 235
+        y_pos = height - 215
         
-        for i, item in enumerate(dados_payback[:10]):
+        # Mostrar primeiros 21 anos
+        for item in dados_payback[:21]:
             ano = item["ano"]
             amortizacao = item["amortizacao"]
             
-            # Ano
             c.setFillColor(colors.black)
             c.drawString(200, y_pos, str(ano))
             
-            # Valor formatado e colorido
             if amortizacao < 0:
                 valor_fmt = f"-R$ {abs(amortizacao):,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
                 c.setFillColor(colors.red)
@@ -417,30 +419,47 @@ class PDFGenerator:
             
             c.drawString(350, y_pos, valor_fmt)
             y_pos -= 20
+            
+            # Nova página se necessário
+            if y_pos < 100:
+                c.showPage()
+                y_pos = height - 100
         
-        # Caixa acumulado em 21 anos
-        y_pos -= 30
-        c.setFont("Helvetica-Bold", 14)
-        c.setFillColor(colors.HexColor('#70AD47'))
-        c.drawCentredString(width/2, y_pos, "CAIXA ACUMULADO EM 21 ANOS:")
-        c.setFont("Helvetica-Bold", 18)
-        economia_fmt = f"R$ {economia_total:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
-        c.drawCentredString(width/2, y_pos - 25, economia_fmt)
+        # Caixa acumulado
+        if y_pos > 150:
+            c.setFont("Helvetica-Bold", 14)
+            c.setFillColor(colors.HexColor('#70AD47'))
+            c.drawCentredString(width/2, 120, "CAIXA ACUMULADO EM 21 ANOS:")
+            c.setFont("Helvetica-Bold", 18)
+            economia_fmt = f"R$ {economia_total:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+            c.drawCentredString(width/2, 90, economia_fmt)
         
         # Notas
         c.setFont("Helvetica", 9)
         c.setFillColor(colors.gray)
-        c.drawString(100, 100, "*Neste retorno do investimento foram considerados reajustes")
-        c.drawString(100, 85, "anuais da tarifa de energia, em média 5% ao ano")
+        c.drawString(100, 60, "*Neste retorno do investimento foram considerados reajustes")
+        c.drawString(100, 45, "anuais da tarifa de energia, em média 5% ao ano")
         
-        # Rodapé final
+        # Rodapé
         c.setFont("Helvetica", 8)
-        c.setFillColor(colors.gray)
-        c.drawCentredString(width/2, 30, "LEVESOL LTDA CNPJ 44.075.186/0001-11")
-        c.drawCentredString(width/2, 20, "Contato: (14) 99893-7738 | contato@levesol.com.br")
-        c.drawCentredString(width/2, 10, "www.levesol.com.br")
+        c.drawCentredString(width/2, 25, "LEVESOL LTDA CNPJ 44.075.186/0001-11")
+        c.drawCentredString(width/2, 15, "www.levesol.com.br")
         
         c.save()
         
         buffer.seek(0)
         return buffer.getvalue()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
