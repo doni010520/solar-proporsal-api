@@ -38,6 +38,10 @@ class PDFGenerator:
         self.COLOR_RED_NEGATIVE = colors.HexColor('#e74c3c')
         self.COLOR_BORDER = colors.HexColor('#bdc3c7')
 
+        # Cores em formato de string para Matplotlib
+        self.COLOR_RED_NEGATIVE_HEX = '#e74c3c'
+        self.COLOR_ACCENT_GOLD_HEX = '#f1c40f'
+
         # --- FONTES ---
         self.FONT_BOLD = 'Helvetica-Bold'
         self.FONT_NORMAL = 'Helvetica'
@@ -141,7 +145,7 @@ class PDFGenerator:
         
         fig, ax = plt.subplots(figsize=(10, 5))
         
-        cores = [self.COLOR_RED_NEGATIVE if valor < 0 else self.COLOR_ACCENT_GOLD for valor in amortizacao]
+        cores = [self.COLOR_RED_NEGATIVE_HEX if valor < 0 else self.COLOR_ACCENT_GOLD_HEX for valor in amortizacao]
         
         ax.bar(anos, amortizacao, color=cores, width=0.7, edgecolor='none')
         
