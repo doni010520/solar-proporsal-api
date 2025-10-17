@@ -125,19 +125,24 @@ class PDFGenerator:
         elements = []
         
         # Box título - Proposta Comercial
-        titulo_data = [[
-            Paragraph("<b><font size=18 color=#2C5F7E>Proposta Comercial</font></b><br/>"
-                     "<font size=14 color=#2C5F7E>Sistema Fotovoltaico On-grid</font>", 
-                     styles['Normal'])
-        ]]
+        titulo_texto = """
+        <para align=center spaceBefore=10 spaceAfter=5>
+        <b><font size=18 color=#2C5F7E>Proposta Comercial</font></b>
+        </para>
+        <para align=center spaceBefore=5>
+        <font size=14 color=#2C5F7E>Sistema Fotovoltaico On-grid</font>
+        </para>
+        """
+        
+        titulo_data = [[Paragraph(titulo_texto, styles['Normal'])]]
         
         table_titulo = Table(titulo_data, colWidths=[16*cm])
         table_titulo.setStyle(TableStyle([
             ('BOX', (0, 0), (-1, -1), 2, self.cor_amarela),
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-            ('TOPPADDING', (0, 0), (-1, -1), 15),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 15),
+            ('TOPPADDING', (0, 0), (-1, -1), 20),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 20),
         ]))
         elements.append(table_titulo)
         elements.append(Spacer(1, 0.5*cm))
@@ -158,20 +163,25 @@ class PDFGenerator:
         elements.append(table_proposta_header)
         
         proposta_data = [
-            ["CLIENTE", dados['cliente']['nome'].upper()],
-            ["CPF/CNPJ", dados['cliente'].get('cpf_cnpj', 'N/A')],
-            ["ENDEREÇO", dados['cliente'].get('endereco', 'N/A')],
-            ["CIDADE", dados['cliente'].get('cidade', 'N/A')]
+            [Paragraph("<b>CLIENTE</b>", styles['Normal']), 
+             Paragraph(dados['cliente']['nome'].upper(), styles['Normal'])],
+            [Paragraph("<b>CPF/CNPJ</b>", styles['Normal']), 
+             Paragraph(dados['cliente'].get('cpf_cnpj', 'N/A'), styles['Normal'])],
+            [Paragraph("<b>ENDEREÇO</b>", styles['Normal']), 
+             Paragraph(dados['cliente'].get('endereco', 'N/A'), styles['Normal'])],
+            [Paragraph("<b>CIDADE</b>", styles['Normal']), 
+             Paragraph(dados['cliente'].get('cidade', 'N/A'), styles['Normal'])]
         ]
         
-        table_proposta = Table(proposta_data, colWidths=[8*cm, 8*cm])
+        table_proposta = Table(proposta_data, colWidths=[5*cm, 11*cm])
         table_proposta.setStyle(TableStyle([
             ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
-            ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
             ('FONTSIZE', (0, 0), (-1, -1), 10),
             ('LEFTPADDING', (0, 0), (-1, -1), 10),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 10),
             ('TOPPADDING', (0, 0), (-1, -1), 8),
             ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
         ]))
         elements.append(table_proposta)
         elements.append(Spacer(1, 0.5*cm))
@@ -192,23 +202,31 @@ class PDFGenerator:
         elements.append(table_consumo_header)
         
         consumo_data = [
-            ["CONCESSIONÁRIA", dados.get('concessionaria', 'CPFL')],
-            ["TIPO DE FORNECIMENTO", dados.get('tipo_fornecimento', 'Bifásico').capitalize()],
-            ["TENSÃO", dados.get('tensao', '220V')],
-            ["ÍNDICE DE RADIAÇÃO (KW/m²)", str(dados.get('radiacao_solar', 5))],
-            ["CONSUMO MÉDIO ATUAL (KWH)", str(dados['consumo']['consumo_medio_mensal'])],
-            ["GERAÇÃO MÉDIA MENSAL (KWH)", f"{dados['sistema']['geracao_media_mensal_kwh']:.0f}"],
-            ["VALOR MÉDIO MENSAL DA CONTA", f"R$ {dados['financeiro']['valor_conta_atual_mensal']:.2f}"]
+            [Paragraph("<b>CONCESSIONÁRIA</b>", styles['Normal']), 
+             Paragraph(dados.get('concessionaria', 'CPFL'), styles['Normal'])],
+            [Paragraph("<b>TIPO DE FORNECIMENTO</b>", styles['Normal']), 
+             Paragraph(dados.get('tipo_fornecimento', 'Bifásico').capitalize(), styles['Normal'])],
+            [Paragraph("<b>TENSÃO</b>", styles['Normal']), 
+             Paragraph(dados.get('tensao', '220V'), styles['Normal'])],
+            [Paragraph("<b>ÍNDICE DE RADIAÇÃO (KW/m²)</b>", styles['Normal']), 
+             Paragraph(str(dados.get('radiacao_solar', 5)), styles['Normal'])],
+            [Paragraph("<b>CONSUMO MÉDIO ATUAL (KWH)</b>", styles['Normal']), 
+             Paragraph(str(dados['consumo']['consumo_medio_mensal']), styles['Normal'])],
+            [Paragraph("<b>GERAÇÃO MÉDIA MENSAL (KWH)</b>", styles['Normal']), 
+             Paragraph(f"{dados['sistema']['geracao_media_mensal_kwh']:.0f}", styles['Normal'])],
+            [Paragraph("<b>VALOR MÉDIO MENSAL DA CONTA</b>", styles['Normal']), 
+             Paragraph(f"R$ {dados['financeiro']['valor_conta_atual_mensal']:.2f}", styles['Normal'])]
         ]
         
         table_consumo = Table(consumo_data, colWidths=[8*cm, 8*cm])
         table_consumo.setStyle(TableStyle([
             ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
-            ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
             ('FONTSIZE', (0, 0), (-1, -1), 10),
             ('LEFTPADDING', (0, 0), (-1, -1), 10),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 10),
             ('TOPPADDING', (0, 0), (-1, -1), 8),
             ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
         ]))
         elements.append(table_consumo)
         elements.append(Spacer(1, 0.5*cm))
@@ -229,19 +247,23 @@ class PDFGenerator:
         elements.append(table_sistema_header)
         
         sistema_data = [
-            ["NÚMERO DE MÓDULOS FOTOVOLTAICOS (un.)", str(dados['sistema']['num_modulos'])],
-            ["POTÊNCIA TOTAL DO SISTEMA FOTOVOLTAICO (kWp)", str(dados['sistema']['potencia_kwp'])],
-            ["ÁREA NECESSÁRIA (m²)", f"{dados['sistema']['area_necessaria_m2']:.0f}"]
+            [Paragraph("<b>NÚMERO DE MÓDULOS FOTOVOLTAICOS (un.)</b>", styles['Normal']), 
+             Paragraph(str(dados['sistema']['num_modulos']), styles['Normal'])],
+            [Paragraph("<b>POTÊNCIA TOTAL DO SISTEMA FOTOVOLTAICO (kWp)</b>", styles['Normal']), 
+             Paragraph(str(dados['sistema']['potencia_kwp']), styles['Normal'])],
+            [Paragraph("<b>ÁREA NECESSÁRIA (m²)</b>", styles['Normal']), 
+             Paragraph(f"{dados['sistema']['area_necessaria_m2']:.0f}", styles['Normal'])]
         ]
         
-        table_sistema = Table(sistema_data, colWidths=[8*cm, 8*cm])
+        table_sistema = Table(sistema_data, colWidths=[11*cm, 5*cm])
         table_sistema.setStyle(TableStyle([
             ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
-            ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
             ('FONTSIZE', (0, 0), (-1, -1), 10),
             ('LEFTPADDING', (0, 0), (-1, -1), 10),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 10),
             ('TOPPADDING', (0, 0), (-1, -1), 8),
             ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
         ]))
         elements.append(table_sistema)
         
