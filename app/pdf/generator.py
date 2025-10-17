@@ -345,7 +345,7 @@ class PDFGenerator:
         investimento_fmt = f"R$ {investimento:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
         c.drawString(260, height - 155, investimento_fmt)
         
-        c.setFont("Helvetica-Italic", 9)
+        c.setFont("Helvetica", 9)
         c.setFillColor(colors.gray)
         c.drawString(100, height - 195, "*Esse é um orçamento inicial. O preço final é definido após visita técnica.")
         
@@ -428,7 +428,7 @@ class PDFGenerator:
         c.drawCentredString(width/2, y_pos - 25, economia_fmt)
         
         # Notas
-        c.setFont("Helvetica-Italic", 9)
+        c.setFont("Helvetica", 9)
         c.setFillColor(colors.gray)
         c.drawString(100, 100, "*Neste retorno do investimento foram considerados reajustes")
         c.drawString(100, 85, "anuais da tarifa de energia, em média 5% ao ano")
