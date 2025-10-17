@@ -642,6 +642,106 @@ class PDFGenerator:
         c.drawCentredString(width/2, 20, "www.levesol.com.br")
         
         c.save()
+
+         # ========== PÁGINA 7: PRAZOS E ASSINATURA ==========
+        self.desenhar_fundo_interno(c, width, height)
+
+        # Título
+        c.setFillColor(colors.HexColor('#366092'))
+        c.setFont("Helvetica-Bold", 20)
+        c.drawCentredString(width / 2, height - 120, "Prazos")
+
+        y_pos = height - 180
+
+        # Textos
+        c.setFont("Helvetica-Bold", 10)
+        c.setFillColor(colors.black)
+        c.drawString(70, y_pos, "PROPOSTA VÁLIDA POR 10 DIAS OU ENQUANTO DURAREM OS ESTOQUES.")
+        y_pos -= 30
+
+        c.setFont("Helvetica", 10)
+        text_lines = [
+            "Entrega dos Equipamentos: 30 a 60 dias após pagamento da entrada ou valor integral.",
+            "Instalação: 7 a 15 dias após a entrega dos equipamentos.",
+            "Início de Funcionamento do Sistema: o prazo de funcionamento do sistema pode variar em média de 30 a 60 dias a contar da",
+            "assinatura desta Proposta, a depender única e exclusivamente da concessionária de energia local, conforme regras da Aneel."
+        ]
+        for line in text_lines:
+            c.drawString(70, y_pos, line)
+            y_pos -= 15
+        
+        y_pos -= 30
+        c.setFont("Helvetica-Bold", 10)
+        c.drawString(70, y_pos, "No aceite desta proposta, favor preencher e assinar os campos abaixo:")
+        y_pos -= 40
+        
+        # Data
+        data_atual = datetime.now().strftime("%d/%m/%Y")
+        c.setFont("Helvetica", 11)
+        c.drawString(70, y_pos, f"BAURU-SP, {data_atual}")
+        y_pos -= 60
+
+        # Campos de assinatura do cliente
+        c.setFont("Helvetica", 11)
+        c.drawString(70, y_pos, "Nome/Razão Social:")
+        c.line(200, y_pos - 2, width - 70, y_pos - 2)
+        y_pos -= 30
+        c.drawString(70, y_pos, "CPF/CNPJ:")
+        c.line(140, y_pos - 2, width - 70, y_pos - 2)
+        y_pos -= 30
+        c.drawString(70, y_pos, "RG:")
+        c.line(100, y_pos - 2, width - 70, y_pos - 2)
+
+        # Assinatura Gabriel
+        y_pos -= 80
+        try:
+            assinatura_path = os.path.join(self.assets_path, "assinatura_gabriel.png")
+            if os.path.exists(assinatura_path):
+                c.drawImage(assinatura_path, 70, y_pos, width=200, height=80,
+                            preserveAspectRatio=True, mask='auto')
+        except:
+            pass
+        
+        # Linha abaixo da assinatura
+        c.line(70, y_pos -2, 350, y_pos - 2)
+        y_pos -= 15
+
+        # Detalhes do Gabriel
+        c.setFont("Helvetica-Bold", 11)
+        c.drawString(70, y_pos, "GABRIEL SHAYEB")
+        y_pos -= 15
+        c.setFont("Helvetica", 10)
+        c.drawString(70, y_pos, "Diretor")
+        y_pos -= 12
+        c.drawString(70, y_pos, "Engenheiro Eletricista")
+        y_pos -= 12
+        c.drawString(70, y_pos, "Engenheiro de Segurança do Trabalho")
+        y_pos -= 12
+        c.drawString(70, y_pos, "CREA 5069575855")
+
+        # Logo Levesol
+        try:
+            logo_path = os.path.join(self.assets_path, "logo_levesol.png")
+            if os.path.exists(logo_path):
+                 c.drawImage(logo_path, 0, 60, width=width, height=80,
+                            preserveAspectRatio=True, mask='auto')
+        except:
+            # Fallback se não tiver logo
+            c.setFont("Helvetica-Bold", 36)
+            c.setFillColor(colors.HexColor('#366092'))
+            c.drawCentredString(width/2, 80, "LEVESOL")
+
+        # Rodapé
+        c.setFont("Helvetica", 8)
+        c.setFillColor(colors.gray)
+        c.drawCentredString(width/2, 50, "LEVESOL LTDA CNPJ 44.075.186/0001-11")
+        c.drawCentredString(width/2, 40, "Avenida Nossa Senhora de Fátima, 11-15, Jardim América, CEP 17017-337, Bauru")
+        c.drawCentredString(width/2, 30, f"Contato: (14) 99893-7738 contato@levesol.com.br")
+        c.drawCentredString(width/2, 20, "www.levesol.com.br")
+        
+        c.save()
         
         buffer.seek(0)
         return buffer.getvalue()
+
+
