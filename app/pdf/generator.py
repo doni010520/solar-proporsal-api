@@ -641,7 +641,7 @@ class PDFGenerator:
         c.drawCentredString(width/2, 30, f"Contato: (14) 99893-7738 contato@levesol.com.br")
         c.drawCentredString(width/2, 20, "www.levesol.com.br")
         
-         # ========== PÁGINA 7: PRAZOS E ASSINATURA ==========
+   # ========== PÁGINA 7: PRAZOS E ASSINATURA ==========
         self.desenhar_fundo_interno(c, width, height)
 
         # Título
@@ -658,15 +658,35 @@ class PDFGenerator:
         y_pos -= 30
 
         c.setFont("Helvetica", 10)
-        text_lines = [
-            "Entrega dos Equipamentos: 30 a 60 dias após pagamento da entrada ou valor integral.",
-            "Instalação: 7 a 15 dias após a entrega dos equipamentos.",
-            "Início de Funcionamento do Sistema: o prazo de funcionamento do sistema pode variar em média de 30 a 60 dias a contar da",
-            "assinatura desta Proposta, a depender única e exclusivamente da concessionária de energia local, conforme regras da Aneel."
-        ]
-        for line in text_lines:
-            c.drawString(70, y_pos, line)
-            y_pos -= 15
+        # Linhas curtas podem ser desenhadas diretamente
+        c.drawString(70, y_pos, "Entrega dos Equipamentos: 30 a 60 dias após pagamento da entrada ou valor integral.")
+        y_pos -= 15
+        c.drawString(70, y_pos, "Instalação: 7 a 15 dias após a entrega dos equipamentos.")
+        y_pos -= 15
+
+        # Para o texto longo, usamos um Paragraph para quebra de linha automática
+        long_text = "Início de Funcionamento do Sistema: o prazo de funcionamento do sistema pode variar em média de 30 a 60 dias a contar da assinatura desta Proposta, a depender única e exclusivamente da concessionária de energia local, conforme regras da Aneel."
+        
+        paragraph_style = ParagraphStyle(
+            name='Normal_Left_Small',
+            fontName='Helvetica',
+            fontSize=10,
+            alignment=TA_LEFT,
+            leading=14  # Espaçamento entre linhas
+        )
+
+        p = Paragraph(long_text, paragraph_style)
+        
+        # Calcula a largura disponível e a altura que o parágrafo vai ocupar
+        p_width = width - 140  # Margem de 70px de cada lado
+        _w_actual, h_actual = p.wrapOn(c, p_width, 500) # 500 é uma altura grande o suficiente
+        
+        # Desenha o parágrafo. A coordenada Y é do canto inferior esquerdo.
+        # Então posicionamos no y_pos atual, menos a sua própria altura.
+        p.drawOn(c, 70, y_pos - h_actual)
+        
+        # Atualiza o y_pos para a base do parágrafo, para o próximo elemento.
+        y_pos -= h_actual
         
         y_pos -= 30
         c.setFont("Helvetica-Bold", 10)
@@ -736,6 +756,7 @@ class PDFGenerator:
         c.drawCentredString(width/2, 40, "Avenida Nossa Senhora de Fátima, 11-15, Jardim América, CEP 17017-337, Bauru")
         c.drawCentredString(width/2, 30, f"Contato: (14) 99893-7738 contato@levesol.com.br")
         c.drawCentredString(width/2, 20, "www.levesol.com.br")
+        
         
         c.save()
         
