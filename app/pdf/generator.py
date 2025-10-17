@@ -594,28 +594,28 @@ class PDFGenerator:
         y_pos -= 30
         c.setStrokeColor(colors.HexColor('#FFD700'))
         c.setLineWidth(2)
-        c.rect(50, y_pos, width - 100, 70, fill=0, stroke=1)
+        c.rect(50, y_pos, width - 100, 60, fill=0, stroke=1)
         
         c.setFont("Helvetica-Bold", 12)
         c.setFillColor(colors.HexColor('#366092'))
-        c.drawCentredString(width/2, y_pos + 50, "Garantia de Material")
+        c.drawCentredString(width/2, y_pos + 42, "Garantia de Material")
         
         c.setFont("Helvetica", 10)
         c.setFillColor(colors.black)
-        c.drawString(70, y_pos + 30, "Inversores fotovoltaicos: Garantia de")
-        c.drawString(70, y_pos + 17, "10 anos contra defeito de fabricação.")
+        c.drawString(70, y_pos + 22, "Inversores fotovoltaicos: Garantia de")
+        c.drawString(70, y_pos + 8, "10 anos contra defeito de fabricação.")
         
-        c.drawString(width/2 + 20, y_pos + 30, "Módulos fotovoltaicos: Garantia de geração")
-        c.drawString(width/2 + 20, y_pos + 17, "nominal de 30 anos e 12 anos de garantia")
-        c.drawString(width/2 + 20, y_pos + 4, "contra defeito de fabricação.")
+        c.drawString(width/2 + 20, y_pos + 22, "Módulos fotovoltaicos: Garantia de geração")
+        c.drawString(width/2 + 20, y_pos + 8, "nominal de 30 anos e 12 anos de garantia")
+        c.drawString(width/2 + 20, y_pos - 6, "contra defeito de fabricação.")
         
-        # Logos dos fornecedores - movido para baixo
-        y_pos -= 100
+        # Logos dos fornecedores - movido para baixo e maior
+        y_pos -= 120
         try:
             logos_path = os.path.join(self.assets_path, "logos_fornecedores.png")
             if os.path.exists(logos_path):
-                # Desenhar com transparência usando mask='auto'
-                c.drawImage(logos_path, 50, y_pos, width=width-100, height=60, 
+                # Desenhar maior e centralizado
+                c.drawImage(logos_path, 80, y_pos, width=width-160, height=100, 
                            preserveAspectRatio=True, mask='auto')
         except:
             # Se não houver imagem, listar os nomes
@@ -625,13 +625,13 @@ class PDFGenerator:
                      "WEG", "HonorSolar", "HUAWEI", "Risen", "TrinaSolar"]
             x_pos = 60
             for marca in marcas:
-                c.drawString(x_pos, y_pos + 30, marca)
+                c.drawString(x_pos, y_pos + 50, marca)
                 x_pos += 45
                 if x_pos > width - 100:
                     x_pos = 60
                     y_pos -= 15
         
-        # Garantia de instalação
+        # Garantia de instalação - posição fixa no final
         c.setFont("Helvetica-Bold", 11)
         c.setFillColor(colors.HexColor('#366092'))
         c.drawCentredString(width/2, 80, "GARANTIA DE 1 ANO DA INSTALAÇÃO ELÉTRICA")
