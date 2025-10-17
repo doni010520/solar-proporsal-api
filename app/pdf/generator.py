@@ -43,6 +43,15 @@ class PDFGenerator:
             spaceAfter=20
         ))
     
+    def desenhar_fundo_interno(self, c, width, height):
+        """Adiciona o fundo padrão nas páginas internas"""
+        try:
+            bg_path = os.path.join(self.assets_path, "background_interno.jpg")
+            if os.path.exists(bg_path):
+                c.drawImage(bg_path, 0, 0, width=width, height=height, preserveAspectRatio=False, mask='auto')
+        except:
+            pass
+    
     def extrair_dados(self, dados_completos):
         """Extrai dados do sistema e payback do JSON unificado"""
         dados_sistema = {}
@@ -220,6 +229,9 @@ class PDFGenerator:
         c.showPage()
         
         # ========== PÁGINA 2: DADOS DO SISTEMA ==========
+        # Adicionar fundo
+        self.desenhar_fundo_interno(c, width, height)
+        
         # Título com box
         c.setFillColor(colors.HexColor('#FFD700'))
         c.rect(50, height - 100, width - 100, 40, fill=1)
@@ -315,7 +327,83 @@ class PDFGenerator:
         
         c.showPage()
         
-        # ========== PÁGINA 3: ANÁLISE FINANCEIRA COM GRÁFICO ==========
+        # ========== PÁGINA 3: ECONOMIA DE ENERGIA ==========
+        # Adicionar fundo
+        self.desenhar_fundo_interno(c, width, height)
+        
+        # Logo LEVESOL no topo
+        c.setFont("Helvetica-Bold", 24)
+        c.setFillColor(colors.HexColor('#366092'))
+        c.drawString(50, height - 50, "LEVESOL")
+        
+        # Título com box amarelo
+        c.setFillColor(colors.HexColor('#FFD700'))
+        c.rect(50, height - 120, width - 100, 40, fill=1)
+        c.setFillColor(colors.HexColor('#366092'))
+        c.setFont("Helvetica-Bold", 18)
+        c.drawCentredString(width/2, height - 100, "Economia de Energia")
+        
+        # Tabela de economia
+        y_pos = height - 170
+        
+        # Área cinza para a tabela
+        c.setFillColor(colors.HexColor('#F0F0F0'))
+        c.rect(150, y_pos - 440, 300, 460, fill=1)
+        
+        # Cabeçalhos da tabela
+        c.setFillColor(colors.HexColor('#366092'))
+        c.setFont("Helvetica-Bold", 10)
+        c.drawString(200, y_pos, "ANO")
+        c.drawString(320, y_pos, "ECONOMIA MÉDIA DE")
+        c.drawString(330, y_pos - 12, "ENERGIA MENSAL")
+        
+        y_pos -= 30
+        c.setFont("Helvetica", 10)
+        
+        # Dados de economia para 21 anos
+        for i, item in enumerate(dados_payback[:21]):  # Limitar a 21 anos
+            ano = item["ano"]
+            economia = item["economia_mensal"]
+            
+            # Alternar cores de fundo
+            if i % 2 == 0:
+                c.setFillColor(colors.white)
+            else:
+                c.setFillColor(colors.HexColor('#F5F5F5'))
+            
+            c.rect(150, y_pos - 15, 300, 20, fill=1)
+            
+            # Texto
+            c.setFillColor(colors.black)
+            c.drawString(200, y_pos, str(ano))
+            
+            # Economia em verde
+            c.setFillColor(colors.HexColor('#70AD47'))
+            c.setFont("Helvetica-Bold", 10)
+            economia_fmt = f"R$ {economia:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+            c.drawString(330, y_pos, economia_fmt)
+            
+            c.setFont("Helvetica", 10)
+            y_pos -= 20
+        
+        # Nota no final
+        c.setFont("Helvetica", 9)
+        c.setFillColor(colors.HexColor('#366092'))
+        c.drawCentredString(width/2, y_pos - 20, "Considerados reajustes anuais da tarifa de")
+        c.drawCentredString(width/2, y_pos - 35, "energia, em média 5% ao ano.")
+        
+        # Rodapé
+        c.setFont("Helvetica", 8)
+        c.setFillColor(colors.gray)
+        c.drawCentredString(width/2, 30, "LEVESOL LTDA CNPJ 44.075.186/0001-11")
+        c.drawCentredString(width/2, 20, "Avenida Nossa Senhora de Fátima, 11-15, Jardim América, CEP 17017-337, Bauru")
+        
+        c.showPage()
+        
+        # ========== PÁGINA 4: ANÁLISE FINANCEIRA COM GRÁFICO ==========
+        # Adicionar fundo
+        self.desenhar_fundo_interno(c, width, height)
+        
         c.setFillColor(colors.HexColor('#FFD700'))
         c.rect(50, height - 100, width - 100, 40, fill=1)
         c.setFillColor(colors.HexColor('#366092'))
@@ -353,7 +441,10 @@ class PDFGenerator:
         
         c.showPage()
         
-        # ========== PÁGINA 4: RETORNO DO INVESTIMENTO ==========
+        # ========== PÁGINA 5: RETORNO DO INVESTIMENTO ==========
+        # Adicionar fundo
+        self.desenhar_fundo_interno(c, width, height)
+        
         c.setFillColor(colors.HexColor('#FFD700'))
         c.rect(50, height - 100, width - 100, 40, fill=1)
         c.setFillColor(colors.HexColor('#366092'))
@@ -381,7 +472,7 @@ class PDFGenerator:
         y_pos = height - 215
         
         # Mostrar primeiros 21 anos
-        for item in dados_payback[:21]:
+        for item in dados_payback[:21]:  # Limitar a 21 anos
             ano = item["ano"]
             amortizacao = item["amortizacao"]
             
@@ -401,6 +492,7 @@ class PDFGenerator:
             # Nova página se necessário
             if y_pos < 100:
                 c.showPage()
+                self.desenhar_fundo_interno(c, width, height)
                 y_pos = height - 100
         
         # Caixa acumulado
