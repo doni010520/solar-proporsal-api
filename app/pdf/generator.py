@@ -124,25 +124,27 @@ class PDFGenerator:
         """Cria página com informações da proposta (logo + tabelas)"""
         elements = []
         
-        # Box título - Proposta Comercial
-        titulo_texto = """
-        <para align=center spaceBefore=10 spaceAfter=5>
-        <b><font size=18 color=#2C5F7E>Proposta Comercial</font></b>
-        </para>
-        <para align=center spaceBefore=5>
-        <font size=14 color=#2C5F7E>Sistema Fotovoltaico On-grid</font>
-        </para>
-        """
+        # Box título - Proposta Comercial (2 linhas separadas)
+        titulo_linha1 = Paragraph(
+            "<b><font size=18 color=#2C5F7E>Proposta Comercial</font></b>", 
+            styles['Normal']
+        )
+        titulo_linha2 = Paragraph(
+            "<font size=14 color=#2C5F7E>Sistema Fotovoltaico On-grid</font>", 
+            styles['Normal']
+        )
         
-        titulo_data = [[Paragraph(titulo_texto, styles['Normal'])]]
+        titulo_data = [[titulo_linha1], [titulo_linha2]]
         
         table_titulo = Table(titulo_data, colWidths=[16*cm])
         table_titulo.setStyle(TableStyle([
             ('BOX', (0, 0), (-1, -1), 2, self.cor_amarela),
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-            ('TOPPADDING', (0, 0), (-1, -1), 20),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 20),
+            ('TOPPADDING', (0, 0), (-1, 0), 15),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 5),
+            ('TOPPADDING', (0, 1), (-1, 1), 5),
+            ('BOTTOMPADDING', (0, 1), (-1, 1), 15),
         ]))
         elements.append(table_titulo)
         elements.append(Spacer(1, 0.5*cm))
@@ -633,5 +635,3 @@ if __name__ == "__main__":
         f.write(pdf_bytes)
     
     print("PDF gerado: proposta_teste.pdf")
-
-
