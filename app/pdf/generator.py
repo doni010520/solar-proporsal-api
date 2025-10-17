@@ -592,10 +592,7 @@ class PDFGenerator:
         
         # Garantia de Material - seção com borda amarela
         y_pos -= 30
-        c.setStrokeColor(colors.HexColor('#FFD700'))
-        c.setLineWidth(2)
-        c.rect(50, y_pos, width - 100, 60, fill=0, stroke=1)
-        
+                
         c.setFont("Helvetica-Bold", 12)
         c.setFillColor(colors.HexColor('#366092'))
         c.drawCentredString(width/2, y_pos + 42, "Garantia de Material")
@@ -615,7 +612,7 @@ class PDFGenerator:
             logos_path = os.path.join(self.assets_path, "logos_fornecedores.png")
             if os.path.exists(logos_path):
                 # Desenhar maior e centralizado
-                c.drawImage(logos_path, 80, y_pos, width=width-160, height=100, 
+                c.drawImage(logos_path, 160, y_pos, width=width-320, height=200, 
                            preserveAspectRatio=True, mask='auto')
         except:
             # Se não houver imagem, listar os nomes
