@@ -641,8 +641,6 @@ class PDFGenerator:
         c.drawCentredString(width/2, 30, f"Contato: (14) 99893-7738 contato@levesol.com.br")
         c.drawCentredString(width/2, 20, "www.levesol.com.br")
         
-        c.save()
-
          # ========== PÁGINA 7: PRAZOS E ASSINATURA ==========
         self.desenhar_fundo_interno(c, width, height)
 
