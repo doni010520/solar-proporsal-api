@@ -63,6 +63,10 @@ class PDFGenerator:
         elements.append(Paragraph("", styles['Normal']))
         elements.append(PageBreak())
         
+        # Página 2: Informações da Proposta
+        elements.extend(self._criar_pagina_informacoes(dados, styles))
+        elements.append(PageBreak())
+        
         # Página com Gráfico Payback
         elements.extend(self._criar_pagina_payback(dados, styles))
         elements.append(PageBreak())
@@ -115,6 +119,133 @@ class PDFGenerator:
         ))
         
         return styles
+    
+    def _criar_pagina_informacoes(self, dados: Dict, styles):
+        """Cria página com informações da proposta (logo + tabelas)"""
+        elements = []
+        
+        # Box título - Proposta Comercial
+        titulo_data = [[
+            Paragraph("<b><font size=18 color=#2C5F7E>Proposta Comercial</font></b><br/>"
+                     "<font size=14 color=#2C5F7E>Sistema Fotovoltaico On-grid</font>", 
+                     styles['Normal'])
+        ]]
+        
+        table_titulo = Table(titulo_data, colWidths=[16*cm])
+        table_titulo.setStyle(TableStyle([
+            ('BOX', (0, 0), (-1, -1), 2, self.cor_amarela),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('TOPPADDING', (0, 0), (-1, -1), 15),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 15),
+        ]))
+        elements.append(table_titulo)
+        elements.append(Spacer(1, 0.5*cm))
+        
+        # Tabela: PROPOSTA COMERCIAL
+        proposta_header = [[Paragraph("<b>PROPOSTA COMERCIAL</b>", styles['Normal'])]]
+        table_proposta_header = Table(proposta_header, colWidths=[16*cm])
+        table_proposta_header.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), self.cor_azul_escuro),
+            ('TEXTCOLOR', (0, 0), (-1, -1), colors.white),
+            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 11),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('LEFTPADDING', (0, 0), (-1, -1), 10),
+            ('TOPPADDING', (0, 0), (-1, -1), 8),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+        ]))
+        elements.append(table_proposta_header)
+        
+        proposta_data = [
+            ["CLIENTE", dados['cliente']['nome'].upper()],
+            ["CPF/CNPJ", dados['cliente'].get('cpf_cnpj', 'N/A')],
+            ["ENDEREÇO", dados['cliente'].get('endereco', 'N/A')],
+            ["CIDADE", dados['cliente'].get('cidade', 'N/A')]
+        ]
+        
+        table_proposta = Table(proposta_data, colWidths=[8*cm, 8*cm])
+        table_proposta.setStyle(TableStyle([
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+            ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('LEFTPADDING', (0, 0), (-1, -1), 10),
+            ('TOPPADDING', (0, 0), (-1, -1), 8),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+        ]))
+        elements.append(table_proposta)
+        elements.append(Spacer(1, 0.5*cm))
+        
+        # Tabela: DADOS DO PERFIL DE CONSUMO DO CLIENTE
+        consumo_header = [[Paragraph("<b>DADOS DO PERFIL DE CONSUMO DO CLIENTE</b>", styles['Normal'])]]
+        table_consumo_header = Table(consumo_header, colWidths=[16*cm])
+        table_consumo_header.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), self.cor_azul_escuro),
+            ('TEXTCOLOR', (0, 0), (-1, -1), colors.white),
+            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 11),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('LEFTPADDING', (0, 0), (-1, -1), 10),
+            ('TOPPADDING', (0, 0), (-1, -1), 8),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+        ]))
+        elements.append(table_consumo_header)
+        
+        consumo_data = [
+            ["CONCESSIONÁRIA", dados.get('concessionaria', 'CPFL')],
+            ["TIPO DE FORNECIMENTO", dados.get('tipo_fornecimento', 'Bifásico').capitalize()],
+            ["TENSÃO", dados.get('tensao', '220V')],
+            ["ÍNDICE DE RADIAÇÃO (KW/m²)", str(dados.get('radiacao_solar', 5))],
+            ["CONSUMO MÉDIO ATUAL (KWH)", str(dados['consumo']['consumo_medio_mensal'])],
+            ["GERAÇÃO MÉDIA MENSAL (KWH)", f"{dados['sistema']['geracao_media_mensal_kwh']:.0f}"],
+            ["VALOR MÉDIO MENSAL DA CONTA", f"R$ {dados['financeiro']['valor_conta_atual_mensal']:.2f}"]
+        ]
+        
+        table_consumo = Table(consumo_data, colWidths=[8*cm, 8*cm])
+        table_consumo.setStyle(TableStyle([
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+            ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('LEFTPADDING', (0, 0), (-1, -1), 10),
+            ('TOPPADDING', (0, 0), (-1, -1), 8),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+        ]))
+        elements.append(table_consumo)
+        elements.append(Spacer(1, 0.5*cm))
+        
+        # Tabela: SISTEMA FOTOVOLTAICO PROPOSTO
+        sistema_header = [[Paragraph("<b>SISTEMA FOTOVOLTAICO PROPOSTO</b>", styles['Normal'])]]
+        table_sistema_header = Table(sistema_header, colWidths=[16*cm])
+        table_sistema_header.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), self.cor_azul_escuro),
+            ('TEXTCOLOR', (0, 0), (-1, -1), colors.white),
+            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 11),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('LEFTPADDING', (0, 0), (-1, -1), 10),
+            ('TOPPADDING', (0, 0), (-1, -1), 8),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+        ]))
+        elements.append(table_sistema_header)
+        
+        sistema_data = [
+            ["NÚMERO DE MÓDULOS FOTOVOLTAICOS (un.)", str(dados['sistema']['num_modulos'])],
+            ["POTÊNCIA TOTAL DO SISTEMA FOTOVOLTAICO (kWp)", str(dados['sistema']['potencia_kwp'])],
+            ["ÁREA NECESSÁRIA (m²)", f"{dados['sistema']['area_necessaria_m2']:.0f}"]
+        ]
+        
+        table_sistema = Table(sistema_data, colWidths=[8*cm, 8*cm])
+        table_sistema.setStyle(TableStyle([
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+            ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('LEFTPADDING', (0, 0), (-1, -1), 10),
+            ('TOPPADDING', (0, 0), (-1, -1), 8),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+        ]))
+        elements.append(table_sistema)
+        
+        return elements
     
     def _desenhar_capa(self, canvas_obj, doc):
         """Desenha a capa na primeira página usando canvas"""
@@ -480,3 +611,5 @@ if __name__ == "__main__":
         f.write(pdf_bytes)
     
     print("PDF gerado: proposta_teste.pdf")
+
+
