@@ -41,6 +41,7 @@ class PDFGenerator:
         # Cores em formato de string para Matplotlib
         self.COLOR_RED_NEGATIVE_HEX = '#e74c3c'
         self.COLOR_ACCENT_GOLD_HEX = '#f1c40f'
+        self.COLOR_TEXT_HEX = '#34495e' # <-- ADICIONADO PARA CORRIGIR O ERRO
 
         # --- FONTES ---
         self.FONT_BOLD = 'Helvetica-Bold'
@@ -149,7 +150,7 @@ class PDFGenerator:
         
         ax.bar(anos, amortizacao, color=cores, width=0.7, edgecolor='none')
         
-        ax.set_title('Análise de Retorno (Payback)', fontsize=16, fontweight='bold', pad=20, color=self.COLOR_TEXT)
+        ax.set_title('Análise de Retorno (Payback)', fontsize=16, fontweight='bold', pad=20, color=self.COLOR_TEXT_HEX) # <-- CORRIGIDO
         ax.grid(True, axis='y', alpha=0.4, linestyle='--', linewidth=0.7)
         ax.set_axisbelow(True)
         
@@ -168,7 +169,7 @@ class PDFGenerator:
         ax.tick_params(axis='x', labelsize=9)
         ax.tick_params(axis='y', labelsize=9)
 
-        ax.axhline(y=0, color=self.COLOR_TEXT, linewidth=1, alpha=0.7)
+        ax.axhline(y=0, color=self.COLOR_TEXT_HEX, linewidth=1, alpha=0.7) # <-- CORRIGIDO
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
         ax.spines['left'].set_color('#dddddd')
