@@ -607,12 +607,12 @@ class PDFGenerator:
         c.drawString(width/2 + 20, y_pos - 6, "contra defeito de fabricação.")
         
         # Logos dos fornecedores - movido para baixo e maior
-        y_pos -= 160
+        y_pos -= 180
         try:
             logos_path = os.path.join(self.assets_path, "logos_fornecedores.png")
             if os.path.exists(logos_path):
                 # Desenhar maior e centralizado
-                c.drawImage(logos_path, 80, y_pos, width=width-160, height=130, 
+                c.drawImage(logos_path, 80, y_pos, width=width-160, height=180, 
                            preserveAspectRatio=True, mask='auto')
         except:
             # Se não houver imagem, listar os nomes
