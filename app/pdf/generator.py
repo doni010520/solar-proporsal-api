@@ -612,7 +612,7 @@ class PDFGenerator:
             logos_path = os.path.join(self.assets_path, "logos_fornecedores.png")
             if os.path.exists(logos_path):
                 # Desenhar maior e centralizado
-                c.drawImage(logos_path, 80, y_pos, width=width-740, height=400, 
+                c.drawImage(logos_path, 80, y_pos, width=width-160, height=100, 
                            preserveAspectRatio=True, mask='auto')
         except:
             # Se não houver imagem, listar os nomes
