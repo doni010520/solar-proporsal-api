@@ -524,7 +524,7 @@ class PDFGenerator:
             c.line(field_x_start[i], y_pos - 2, width - 70, y_pos - 2)
             y_pos -= self.SPACE_LARGE
         
-        y_pos -= 30 # Ajuste para descer a assinatura
+        y_pos -= 60 # Ajuste para descer a assinatura
         try:
             assinatura_path = os.path.join(self.assets_path, "assinatura_gabriel.png")
             if os.path.exists(assinatura_path):
