@@ -67,7 +67,11 @@ class PDFGenerator:
         elements.extend(self._criar_pagina_informacoes(dados, styles))
         elements.append(PageBreak())
         
-        # Página com Gráfico Payback
+        # Página 3: Economia de Energia
+        elements.extend(self._criar_pagina_economia(dados, styles))
+        elements.append(PageBreak())
+        
+        # Página 4: Gráfico Payback
         elements.extend(self._criar_pagina_payback(dados, styles))
         elements.append(PageBreak())
         
@@ -268,6 +272,93 @@ class PDFGenerator:
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
         ]))
         elements.append(table_sistema)
+        
+        return elements
+    
+    def _criar_pagina_economia(self, dados: Dict, styles):
+        """Cria página com tabela de economia de energia anual"""
+        elements = []
+        
+        # Box título - Economia de Energia
+        titulo_economia = Paragraph(
+            "<b><font size=18 color=#2C5F7E>Economia de Energia</font></b>", 
+            styles['Normal']
+        )
+        
+        titulo_data = [[titulo_economia]]
+        
+        table_titulo = Table(titulo_data, colWidths=[16*cm])
+        table_titulo.setStyle(TableStyle([
+            ('BOX', (0, 0), (-1, -1), 2, self.cor_amarela),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('TOPPADDING', (0, 0), (-1, -1), 15),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 15),
+        ]))
+        elements.append(table_titulo)
+        elements.append(Spacer(1, 0.5*cm))
+        
+        # Cabeçalho da tabela
+        header_data = [[
+            Paragraph("<b>ANO</b>", styles['Normal']),
+            Paragraph("<b>ECONOMIA MÉDIA DE<br/>ENERGIA MENSAL</b>", styles['Normal'])
+        ]]
+        
+        table_header = Table(header_data, colWidths=[8*cm, 8*cm])
+        table_header.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#E0E0E0')),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('TOPPADDING', (0, 0), (-1, -1), 8),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+        ]))
+        elements.append(table_header)
+        
+        # Dados da economia (todos os 25 anos)
+        economia_data = []
+        for item in dados['economia_por_ano']:
+            ano = Paragraph(f"<b>{item['ano']}</b>", styles['Normal'])
+            valor = Paragraph(
+                f"<font color=#4CAF50><b>R$ {item['economia_mensal']:,.2f}</b></font>", 
+                styles['Normal']
+            )
+            economia_data.append([ano, valor])
+        
+        table_economia = Table(economia_data, colWidths=[8*cm, 8*cm])
+        table_economia.setStyle(TableStyle([
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('TOPPADDING', (0, 0), (-1, -1), 6),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+            # Alternar cores de fundo (zebrado)
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#F5F5F5')),
+            ('BACKGROUND', (0, 2), (-1, 2), colors.HexColor('#F5F5F5')),
+            ('BACKGROUND', (0, 4), (-1, 4), colors.HexColor('#F5F5F5')),
+            ('BACKGROUND', (0, 6), (-1, 6), colors.HexColor('#F5F5F5')),
+            ('BACKGROUND', (0, 8), (-1, 8), colors.HexColor('#F5F5F5')),
+            ('BACKGROUND', (0, 10), (-1, 10), colors.HexColor('#F5F5F5')),
+            ('BACKGROUND', (0, 12), (-1, 12), colors.HexColor('#F5F5F5')),
+            ('BACKGROUND', (0, 14), (-1, 14), colors.HexColor('#F5F5F5')),
+            ('BACKGROUND', (0, 16), (-1, 16), colors.HexColor('#F5F5F5')),
+            ('BACKGROUND', (0, 18), (-1, 18), colors.HexColor('#F5F5F5')),
+            ('BACKGROUND', (0, 20), (-1, 20), colors.HexColor('#F5F5F5')),
+            ('BACKGROUND', (0, 22), (-1, 22), colors.HexColor('#F5F5F5')),
+            ('BACKGROUND', (0, 24), (-1, 24), colors.HexColor('#F5F5F5')),
+        ]))
+        elements.append(table_economia)
+        
+        elements.append(Spacer(1, 0.5*cm))
+        
+        # Nota sobre reajuste
+        nota = Paragraph(
+            "<i><font size=9 color=#2C5F7E>Considerados reajustes anuais da tarifa de energia, em média 5% ao ano.</font></i>",
+            styles['Normal']
+        )
+        elements.append(nota)
         
         return elements
     
