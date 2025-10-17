@@ -18,24 +18,6 @@ class FinancialAnalyzer:
         tarifas = self.config["tarifas_sp"]
         return tarifas["tusd"] + tarifas["te"]
     
-    def calcular_impostos_tarifa(
-        self, 
-        valor_base: float, 
-        icms: float, 
-        pis: float, 
-        cofins: float
-    ) -> Dict[str, float]:
-        """Calcula impostos sobre a tarifa"""
-        icms_valor = ((valor_base / (1 - icms)) - valor_base)
-        pis_valor = (valor_base / (1 - pis)) - valor_base
-        cofins_valor = (valor_base / (1 - cofins)) - valor_base
-        
-        return {
-            "icms": icms_valor,
-            "pis": pis_valor,
-            "cofins": cofins_valor
-        }
-    
     def calcular_conta_sem_solar(
         self,
         consumo_mensal: float,
@@ -49,7 +31,7 @@ class FinancialAnalyzer:
         Calcula valor da conta SEM sistema solar
         Inclui reajuste anual de 5%
         """
-        # Custo base do kWh
+        # Custo base do kWh (TUSD + TE)
         custo_kwh = self.calcular_custo_kwh(icms, pis, cofins)
         
         # Aplicar reajuste anual
@@ -57,14 +39,15 @@ class FinancialAnalyzer:
         fator_reajuste = (1 + reajuste_anual) ** (ano - 1)
         custo_kwh_ajustado = custo_kwh * fator_reajuste
         
-        # Calcular consumo de energia
-        valor_energia = consumo_mensal * custo_kwh_ajustado
+        # Valor da energia SEM impostos
+        valor_sem_impostos = consumo_mensal * custo_kwh_ajustado
         
-        # Calcular impostos
-        impostos = self.calcular_impostos_tarifa(valor_energia, icms, pis, cofins)
+        # Aplicar impostos "por dentro" (somados)
+        aliquota_total = icms + pis + cofins
+        valor_com_impostos = valor_sem_impostos / (1 - aliquota_total)
         
-        # Total
-        total = valor_energia + sum(impostos.values()) + iluminacao_publica
+        # Total (energia com impostos + iluminação pública)
+        total = valor_com_impostos + iluminacao_publica
         
         return round(total, 2)
     
@@ -101,14 +84,15 @@ class FinancialAnalyzer:
         fator_reajuste = (1 + reajuste_anual) ** (ano - 1)
         custo_kwh_ajustado = custo_kwh * fator_reajuste
         
-        # Valor da energia consumida
-        valor_energia = consumo_a_cobrar * custo_kwh_ajustado
+        # Valor da energia SEM impostos
+        valor_sem_impostos = consumo_a_cobrar * custo_kwh_ajustado
         
-        # Calcular impostos
-        impostos = self.calcular_impostos_tarifa(valor_energia, icms, pis, cofins)
+        # Aplicar impostos "por dentro" (somados)
+        aliquota_total = icms + pis + cofins
+        valor_com_impostos = valor_sem_impostos / (1 - aliquota_total)
         
-        # Total
-        total = valor_energia + sum(impostos.values()) + iluminacao_publica
+        # Total (energia com impostos + iluminação pública)
+        total = valor_com_impostos + iluminacao_publica
         
         return round(total, 2)
     
