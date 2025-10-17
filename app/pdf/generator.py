@@ -131,15 +131,25 @@ class PDFGenerator:
                 anchor='c'
             )
         
-        # Desenhar textos dinâmicos sobre a imagem
-        # Nota: A imagem já contém a maioria dos textos fixos
-        # Aqui podemos adicionar nome do cliente e número da proposta se necessário
+        # Adicionar textos dinâmicos sobre a imagem
+        # Configurar cor do texto (preto/cinza escuro)
+        canvas_obj.setFillColor(colors.HexColor('#333333'))
         
-        # Exemplo (descomente se quiser sobrepor texto):
-        # canvas_obj.setFont('Helvetica-Bold', 16)
-        # canvas_obj.setFillColor(colors.HexColor('#333333'))
-        # canvas_obj.drawCentredString(self.width/2, 18*cm, self.dados_proposta['cliente']['nome'])
-        # canvas_obj.drawCentredString(self.width/2, 16*cm, self.dados_proposta['numero_proposta'])
+        # ANEXO I
+        canvas_obj.setFont('Helvetica-Bold', 16)
+        canvas_obj.drawCentredString(self.width / 2, 23*cm, "ANEXO I")
+        
+        # Nome do Cliente
+        canvas_obj.setFont('Helvetica-Bold', 16)
+        canvas_obj.drawCentredString(self.width / 2, 21.5*cm, self.dados_proposta['cliente']['nome'].upper())
+        
+        # PROPOSTA COMERCIAL
+        canvas_obj.setFont('Helvetica-Bold', 16)
+        canvas_obj.drawCentredString(self.width / 2, 20*cm, "PROPOSTA COMERCIAL")
+        
+        # Número da Proposta
+        canvas_obj.setFont('Helvetica-Bold', 14)
+        canvas_obj.drawCentredString(self.width / 2, 18.8*cm, self.dados_proposta['numero_proposta'])
         
         canvas_obj.restoreState()
     
@@ -471,3 +481,5 @@ if __name__ == "__main__":
         f.write(pdf_bytes)
     
     print("PDF gerado: proposta_teste.pdf")
+
+
