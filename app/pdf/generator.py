@@ -41,7 +41,7 @@ class PDFGenerator:
         # Cores em formato de string para Matplotlib
         self.COLOR_RED_NEGATIVE_HEX = '#e74c3c'
         self.COLOR_ACCENT_GOLD_HEX = '#f1c40f'
-        self.COLOR_TEXT_HEX = '#34495e' # <-- ADICIONADO PARA CORRIGIR O ERRO
+        self.COLOR_TEXT_HEX = '#34495e'
 
         # --- FONTES ---
         self.FONT_BOLD = 'Helvetica-Bold'
@@ -60,6 +60,16 @@ class PDFGenerator:
         self.SPACE_MEDIUM = 25
         self.SPACE_SMALL = 15
         self.LINE_SPACING = 18
+
+    def _draw_header_logo(self, c, height):
+        """Desenha o logo no canto superior esquerdo."""
+        try:
+            logo_path = os.path.join(self.assets_path, "levesol_logo.png")
+            if os.path.exists(logo_path):
+                c.drawImage(logo_path, 40, height - 70, width=150, 
+                            preserveAspectRatio=True, mask='auto')
+        except:
+            pass
 
     def _draw_footer(self, c, width):
         """Desenha o rodapé padrão em uma página."""
@@ -80,7 +90,7 @@ class PDFGenerator:
         c.setFont(self.FONT_BOLD, self.FONT_SIZE_BODY_LARGE)
         c.drawString(65, y_pos + 9, title.upper())
         c.restoreState()
-        return y_pos - 28 # Retorna nova posição Y
+        return y_pos - 28
 
     def desenhar_fundo_interno(self, c, width, height):
         """Adiciona o fundo padrão nas páginas internas"""
@@ -91,6 +101,22 @@ class PDFGenerator:
         except:
             pass
     
+    def _clean_currency(self, value_str):
+        """Converte uma string de moeda para float de forma segura."""
+        if value_str is None:
+            return 0.0
+        try:
+            # Remove R$, espaços, e pontos de milhar, depois troca vírgula por ponto
+            s = str(value_str).replace("R$", "").strip()
+            if ',' in s and '.' in s: # Formato provável: 1.234,56
+                s = s.replace('.', '').replace(',', '.')
+            elif ',' in s: # Formato provável: 1234,56
+                s = s.replace(',', '.')
+            # Se tiver só ponto, assume que já é um float no formato "1234.56"
+            return float(s)
+        except (ValueError, TypeError):
+            return 0.0
+
     def extrair_dados(self, dados_completos):
         """Extrai dados do sistema e payback do JSON unificado"""
         dados_sistema = {}
@@ -99,12 +125,8 @@ class PDFGenerator:
         for item in dados_completos:
             if "Gráfico Payback" in item and item.get("col_2"):
                 try:
-                    valor_str = str(item["col_2"]).replace("R$", "").replace(".", "").replace(",", ".").strip()
-                    valor = float(valor_str)
-                    
-                    economia_str = str(item["col_3"]).replace("R$", "").replace(".", "").replace(",", ".").strip()
-                    economia = float(economia_str)
-                    
+                    valor = self._clean_currency(item["col_2"])
+                    economia = self._clean_currency(item["col_3"])
                     ano = int(item["Gráfico Payback"])
                     dados_payback.append({"ano": ano, "amortizacao": valor, "economia_mensal": economia})
                 except (ValueError, TypeError):
@@ -127,11 +149,11 @@ class PDFGenerator:
                         dados_sistema[mapped_key] = valor
                         break
 
-        # Garante que valores numéricos sejam convertidos
         for key in ['num_modulos', 'investimento', 'conta_antes', 'area_total', 'geracao_mensal', 'consumo_atual']:
             if key in dados_sistema and dados_sistema[key] is not None:
                 try:
-                    dados_sistema[key] = float(dados_sistema[key])
+                    # Usa a função de limpeza para garantir consistência
+                    dados_sistema[key] = self._clean_currency(dados_sistema[key])
                 except (ValueError, TypeError):
                     dados_sistema[key] = 0
             else:
@@ -150,11 +172,11 @@ class PDFGenerator:
         
         ax.bar(anos, amortizacao, color=cores, width=0.7, edgecolor='none')
         
-        ax.set_title('Análise de Retorno (Payback)', fontsize=16, fontweight='bold', pad=20, color=self.COLOR_TEXT_HEX) # <-- CORRIGIDO
+        ax.set_title('Análise de Retorno (Payback)', fontsize=16, fontweight='bold', pad=20, color=self.COLOR_TEXT_HEX)
         ax.grid(True, axis='y', alpha=0.4, linestyle='--', linewidth=0.7)
         ax.set_axisbelow(True)
         
-        y_min = min(amortizacao) * 1.15
+        y_min = min(amortizacao) * 1.15 if min(amortizacao) < 0 else 0
         y_max = max(amortizacao) * 1.15
         ax.set_ylim(y_min, y_max)
         
@@ -169,7 +191,7 @@ class PDFGenerator:
         ax.tick_params(axis='x', labelsize=9)
         ax.tick_params(axis='y', labelsize=9)
 
-        ax.axhline(y=0, color=self.COLOR_TEXT_HEX, linewidth=1, alpha=0.7) # <-- CORRIGIDO
+        ax.axhline(y=0, color=self.COLOR_TEXT_HEX, linewidth=1, alpha=0.7)
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
         ax.spines['left'].set_color('#dddddd')
@@ -228,6 +250,7 @@ class PDFGenerator:
         
         # ========== PÁGINA 2: DADOS DO SISTEMA ==========
         self.desenhar_fundo_interno(c, width, height)
+        self._draw_header_logo(c, height)
         c.setFillColor(self.COLOR_PRIMARY_BLUE)
         c.setFont(self.FONT_BOLD, self.FONT_SIZE_TITLE)
         c.drawCentredString(width/2, height - 80, "Proposta Comercial")
@@ -236,15 +259,13 @@ class PDFGenerator:
         
         y_pos = height - 160
         y_pos = self._draw_section_header(c, y_pos, "Dados da Proposta", width)
-        
-        y_pos -= self.SPACE_SMALL
+        y_pos -= self.SPACE_MEDIUM # Espaçamento aumentado
+
         c.setFont(self.FONT_NORMAL, self.FONT_SIZE_BODY)
         c.setFillColor(self.COLOR_TEXT)
         
-        dados_cliente = [
-            ("CLIENTE", dados['cliente']['nome'].upper()), ("CPF/CNPJ", dados['cliente']['cpf_cnpj']),
-            ("ENDEREÇO", dados['cliente']['endereco']), ("CIDADE", dados['cliente']['cidade'])
-        ]
+        dados_cliente = [("CLIENTE", dados['cliente']['nome'].upper()), ("CPF/CNPJ", dados['cliente']['cpf_cnpj']),
+                         ("ENDEREÇO", dados['cliente']['endereco']), ("CIDADE", dados['cliente']['cidade'])]
         for label, valor in dados_cliente:
             c.drawString(65, y_pos, f"{label}:")
             c.drawString(220, y_pos, str(valor))
@@ -252,7 +273,7 @@ class PDFGenerator:
         
         y_pos -= self.SPACE_SMALL
         y_pos = self._draw_section_header(c, y_pos, "Perfil de Consumo do Cliente", width)
-        y_pos -= self.SPACE_SMALL
+        y_pos -= self.SPACE_MEDIUM # Espaçamento aumentado
         
         dados_consumo = [
             ("CONCESSIONÁRIA", "CPFL"), ("TIPO DE FORNECIMENTO", dados_sistema.get('tipo_fornecimento', 'N/A')),
@@ -268,7 +289,7 @@ class PDFGenerator:
             
         y_pos -= self.SPACE_SMALL
         y_pos = self._draw_section_header(c, y_pos, "Sistema Fotovoltaico Proposto", width)
-        y_pos -= self.SPACE_SMALL
+        y_pos -= self.SPACE_MEDIUM # Espaçamento aumentado
 
         dados_sfv = [
             ("NÚMERO DE MÓDULOS (un.)", f"{int(dados_sistema.get('num_modulos', 0))}"),
@@ -283,13 +304,13 @@ class PDFGenerator:
         self._draw_footer(c, width)
         c.showPage()
         
-        # ========== PÁGINA 3 E 4: ANÁLISE FINANCEIRA ==========
+        # ========== PÁGINA 3: ANÁLISE FINANCEIRA (GRÁFICO) ==========
         self.desenhar_fundo_interno(c, width, height)
+        self._draw_header_logo(c, height)
         c.setFillColor(self.COLOR_PRIMARY_BLUE)
         c.setFont(self.FONT_BOLD, self.FONT_SIZE_TITLE)
         c.drawCentredString(width/2, height - 80, "Análise Financeira")
 
-        # Box Investimento
         y_pos = height - 140
         c.setFillColor(self.COLOR_TEXT)
         c.setFont(self.FONT_BOLD, self.FONT_SIZE_SUBTITLE)
@@ -312,17 +333,14 @@ class PDFGenerator:
         self._draw_footer(c, width)
         c.showPage()
 
-        # Página 4 (Continuação Financeira)
+        # ========== PÁGINA 4: RETORNO DO INVESTIMENTO (RESUMO E TABELA) ==========
         self.desenhar_fundo_interno(c, width, height)
+        self._draw_header_logo(c, height)
         c.setFillColor(self.COLOR_PRIMARY_BLUE)
         c.setFont(self.FONT_BOLD, self.FONT_SIZE_TITLE)
         c.drawCentredString(width/2, height - 80, "Retorno do Investimento (Payback)")
         
-        c.setFont(self.FONT_NORMAL, self.FONT_SIZE_BODY)
-        c.setFillColor(self.COLOR_TEXT_LIGHT)
-        c.drawCentredString(width/2, height-110, "Este gráfico demonstra o tempo necessário para que a economia gerada pague o investimento.")
-        
-        y_pos = height - 150
+        y_pos = height - 130
         c.setFillColor(self.COLOR_TEXT)
         c.setFont(self.FONT_BOLD, self.FONT_SIZE_SUBTITLE)
         c.drawCentredString(width/2, y_pos, "Tempo Estimado para Retorno")
@@ -341,8 +359,34 @@ class PDFGenerator:
         c.setFont(self.FONT_BOLD, 28)
         economia_fmt = f"R$ {economia_total:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
         c.drawCentredString(width/2, y_pos, economia_fmt)
+        y_pos -= self.SPACE_MEDIUM
 
-        y_pos -= self.SPACE_MEDIUM * 2
+        # Tabela de Detalhamento
+        table_data = [("Ano", "Economia Anual", "Saldo Acumulado")]
+        for item in dados_payback[:21]:
+            ano = item['ano']
+            economia_anual = item['economia_mensal'] * 12
+            saldo = item['amortizacao']
+            table_data.append(
+                (str(ano), f"R$ {economia_anual:,.2f}", f"R$ {saldo:,.2f}")
+            )
+
+        table = Table(table_data, colWidths=[100, 150, 150])
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), self.COLOR_PRIMARY_BLUE),
+            ('TEXTCOLOR', (0, 0), (-1, 0), self.COLOR_WHITE),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('FONTNAME', (0, 0), (-1, 0), self.FONT_BOLD),
+            ('FONTNAME', (0, 1), (-1, -1), self.FONT_NORMAL),
+            ('GRID', (0, 0), (-1, -1), 1, self.COLOR_BORDER),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [self.COLOR_WHITE, self.COLOR_LIGHT_GRAY_BG]),
+        ]))
+        
+        table.wrapOn(c, width - 100, y_pos)
+        table.drawOn(c, (width-400)/2, y_pos - table._height) # Centraliza a tabela
+        y_pos -= table._height + self.SPACE_MEDIUM
+
         c.setFont(self.FONT_NORMAL, self.FONT_SIZE_BODY_SMALL)
         c.setFillColor(self.COLOR_TEXT_LIGHT)
         c.drawCentredString(width/2, y_pos, "*Cálculos baseados em um reajuste anual médio de 5% na tarifa de energia.")
@@ -352,6 +396,7 @@ class PDFGenerator:
 
         # ========== PÁGINA 5: SERVIÇOS E GARANTIAS ==========
         self.desenhar_fundo_interno(c, width, height)
+        self._draw_header_logo(c, height)
         c.setFillColor(self.COLOR_PRIMARY_BLUE)
         c.setFont(self.FONT_BOLD, self.FONT_SIZE_TITLE)
         c.drawCentredString(width/2, height - 80, "Equipamentos e Serviços Inclusos")
@@ -362,31 +407,24 @@ class PDFGenerator:
         potencia_inversor = dados_sistema.get('potencia_inversor', 'N/A')
         
         servicos = [
-            (f"{num_modulos} MÓDULOS FOTOVOLTAICOS RISEN 700W",),
-            (f"1 INVERSOR SOLAR DEYE {potencia_inversor}KW",),
-            ("ESTRUTURA COMPLETA PARA MONTAGEM",),
-            ("PROTEÇÃO E CABEAMENTO CA/CC",), ("HOMOLOGAÇÃO",),
+            (f"{num_modulos} MÓDULOS FOTOVOLTAICOS RISEN 700W",), (f"1 INVERSOR SOLAR DEYE {potencia_inversor}KW",),
+            ("ESTRUTURA COMPLETA PARA MONTAGEM",), ("PROTEÇÃO E CABEAMENTO CA/CC",), ("HOMOLOGAÇÃO",),
             ("INSTALAÇÃO E MÃO DE OBRA",), ("MONITORAMENTO",), ("FRETE",)
         ]
 
         table = Table(servicos, colWidths=[width - 120])
         table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, -1), self.COLOR_LIGHT_GRAY_BG),
-            ('BACKGROUND', (0, 1), (-1, 1), self.COLOR_WHITE),
-            ('BACKGROUND', (0, 3), (-1, 3), self.COLOR_WHITE),
-            ('BACKGROUND', (0, 5), (-1, 5), self.COLOR_WHITE),
-            ('BACKGROUND', (0, 7), (-1, 7), self.COLOR_WHITE),
+            ('BACKGROUND', (0, 0), (-1, -1), self.COLOR_WHITE),
+            ('ROWBACKGROUNDS', (0, 0), (-1, -1), [self.COLOR_WHITE, self.COLOR_LIGHT_GRAY_BG]),
             ('TEXTCOLOR', (0, 0), (-1, -1), self.COLOR_TEXT),
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
             ('FONTNAME', (0, 0), (-1, -1), self.FONT_NORMAL),
             ('FONTSIZE', (0, 0), (-1, -1), self.FONT_SIZE_BODY),
             ('INNERGRID', (0, 0), (-1, -1), 0.25, self.COLOR_BORDER),
-            ('BOX', (0, 0), (-1, -1), 0.25, self.COLOR_BORDER),
-            ('LEFTPADDING', (0, 0), (-1, -1), 20),
-            ('RIGHTPADDING', (0, 0), (-1, -1), 20),
-            ('TOPPADDING', (0, 0), (-1, -1), 10),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
+            ('BOX', (0, 0), (-1, -1), 1, self.COLOR_BORDER),
+            ('LEFTPADDING', (0,0), (-1,-1), 20), ('RIGHTPADDING', (0,0), (-1,-1), 20),
+            ('TOPPADDING', (0,0), (-1,-1), 12), ('BOTTOMPADDING', (0,0), (-1,-1), 12),
         ]))
         table.wrapOn(c, width - 100, y_pos)
         table.drawOn(c, 60, y_pos - table._height)
@@ -419,6 +457,7 @@ class PDFGenerator:
         
         # ========== PÁGINA 6: PRAZOS E ASSINATURA ==========
         self.desenhar_fundo_interno(c, width, height)
+        self._draw_header_logo(c, height)
         c.setFillColor(self.COLOR_PRIMARY_BLUE)
         c.setFont(self.FONT_BOLD, self.FONT_SIZE_TITLE)
         c.drawCentredString(width/2, height - 80, "Prazos e Validade")
@@ -453,7 +492,6 @@ class PDFGenerator:
         c.drawString(70, y_pos, f"BAURU-SP, {datetime.now().strftime('%d/%m/%Y')}")
         y_pos -= self.SPACE_LARGE
 
-        # Campos de assinatura
         fields = ["Nome/Razão Social:", "CPF/CNPJ:", "RG:"]
         field_x_start = [180, 130, 95]
         for i, field in enumerate(fields):
@@ -461,7 +499,7 @@ class PDFGenerator:
             c.line(field_x_start[i], y_pos - 2, width - 70, y_pos - 2)
             y_pos -= self.SPACE_LARGE
         
-        y_pos += 20 # Ajuste fino para assinatura
+        y_pos += 20
         try:
             assinatura_path = os.path.join(self.assets_path, "assinatura_gabriel.png")
             if os.path.exists(assinatura_path):
