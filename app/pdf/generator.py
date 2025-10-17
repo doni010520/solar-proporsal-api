@@ -199,45 +199,23 @@ class PDFGenerator:
         
         # ========== PÁGINA 1: CAPA COM IMAGEM DE FUNDO ==========
         
-        # Tentar adicionar imagem de fundo se existir
+        # Adicionar imagem de fundo
         try:
             bg_path = os.path.join(self.assets_path, "capa_background.png")
             if os.path.exists(bg_path):
                 c.drawImage(bg_path, 0, 0, width=width, height=height, preserveAspectRatio=False)
         except:
-            # Se não conseguir carregar a imagem, usar fundo padrão
-            pass
+            # Se não conseguir carregar a imagem, usar fundo branco
+            c.setFillColor(colors.white)
+            c.rect(0, 0, width, height, fill=1)
         
-        # Adicionar logo se existir
-        try:
-            logo_path = os.path.join(self.assets_path, "logos_fornecedores.png")
-            if os.path.exists(logo_path):
-                c.drawImage(logo_path, width/2 - 100, height - 200, width=200, height=80, preserveAspectRatio=True)
-        except:
-            # Se não houver logo, usar texto
-            c.setFont("Helvetica-Bold", 36)
-            c.setFillColor(colors.HexColor('#366092'))
-            c.drawCentredString(width/2, height - 100, "LEVESOL")
-        
-        # Texto da capa
-        c.setFillColor(colors.white)
-        c.setFont("Helvetica-Bold", 32)
-        c.drawCentredString(width/2, height/2 + 100, "ENERGIA SOLAR FOTOVOLTAICA")
-        
-        c.setFont("Helvetica", 14)
-        c.drawCentredString(width/2, height/2 + 50, "(14) 99893-7738")
-        
-        c.setFont("Helvetica-Bold", 20)
-        c.drawCentredString(width/2, height/2 - 20, "ANEXO I")
-        
+        # Apenas nome do cliente e número da proposta em preto
+        c.setFillColor(colors.black)
         c.setFont("Helvetica-Bold", 18)
-        c.drawCentredString(width/2, height/2 - 60, dados['cliente']['nome'].upper())
-        
-        c.setFont("Helvetica-Bold", 16)
-        c.drawCentredString(width/2, height/2 - 100, "PROPOSTA COMERCIAL")
+        c.drawCentredString(width/2, 200, dados['cliente']['nome'].upper())
         
         c.setFont("Helvetica", 14)
-        c.drawCentredString(width/2, height/2 - 130, f"{dados['numero_proposta']}")
+        c.drawCentredString(width/2, 170, f"PROPOSTA {dados['numero_proposta']}")
         
         c.showPage()
         
