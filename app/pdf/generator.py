@@ -558,12 +558,15 @@ class PDFGenerator:
         
         y_pos -= 30
         
-        # Lista de serviços
+        # Lista de serviços usando dados reais do sistema
+        num_modulos = dados_sistema.get('num_modulos', 20)
+        potencia_inversor = dados_sistema.get('potencia_inversor', 10)
+        
         servicos = [
-            "20 MÓDULOS FOTOVOLTAICOS RISEN SUNX HONOR 700W",
-            "1 INVERSOR SOLAR DEYE 10KW",
+            f"{num_modulos} MÓDULOS FOTOVOLTAICOS RISEN SUNX HONOR 700W",
+            f"1 INVERSOR SOLAR DEYE {int(potencia_inversor)}KW",
             "ESTRUTURA COMPLETA PARA MONTAGEM",
-            "PROTEÇÃO E CABEMANETO CA/CC",
+            "PROTEÇÃO E CABEAMENTO CA/CC",
             "HOMOLOGAÇÃO",
             "INSTALAÇÃO",
             "MONITORAMENTO",
@@ -587,31 +590,33 @@ class PDFGenerator:
             c.drawCentredString(width/2, y_pos + 8, servico)
             y_pos -= 25
         
-        # Garantia de Material - seção amarela
+        # Garantia de Material - seção com borda amarela
         y_pos -= 30
         c.setStrokeColor(colors.HexColor('#FFD700'))
         c.setLineWidth(2)
-        c.rect(50, y_pos, width - 100, 60, fill=0, stroke=1)
+        c.rect(50, y_pos, width - 100, 70, fill=0, stroke=1)
         
         c.setFont("Helvetica-Bold", 12)
         c.setFillColor(colors.HexColor('#366092'))
-        c.drawCentredString(width/2, y_pos + 45, "Garantia de Material")
+        c.drawCentredString(width/2, y_pos + 50, "Garantia de Material")
         
         c.setFont("Helvetica", 10)
         c.setFillColor(colors.black)
-        c.drawString(70, y_pos + 25, "Inversores fotovoltaicos: Garantia de")
-        c.drawString(70, y_pos + 12, "10 anos contra defeito de fabricação.")
+        c.drawString(70, y_pos + 30, "Inversores fotovoltaicos: Garantia de")
+        c.drawString(70, y_pos + 17, "10 anos contra defeito de fabricação.")
         
-        c.drawString(width/2 + 20, y_pos + 25, "Módulos fotovoltaicos: Garantia de geração")
-        c.drawString(width/2 + 20, y_pos + 12, "nominal de 30 anos e 12 anos de garantia")
-        c.drawString(width/2 + 20, y_pos - 1, "contra defeito de fabricação.")
+        c.drawString(width/2 + 20, y_pos + 30, "Módulos fotovoltaicos: Garantia de geração")
+        c.drawString(width/2 + 20, y_pos + 17, "nominal de 30 anos e 12 anos de garantia")
+        c.drawString(width/2 + 20, y_pos + 4, "contra defeito de fabricação.")
         
-        # Logos dos fornecedores
-        y_pos -= 80
+        # Logos dos fornecedores - movido para baixo
+        y_pos -= 100
         try:
             logos_path = os.path.join(self.assets_path, "logos_fornecedores.png")
             if os.path.exists(logos_path):
-                c.drawImage(logos_path, 50, y_pos, width=width-100, height=80, preserveAspectRatio=True)
+                # Desenhar com transparência usando mask='auto'
+                c.drawImage(logos_path, 50, y_pos, width=width-100, height=60, 
+                           preserveAspectRatio=True, mask='auto')
         except:
             # Se não houver imagem, listar os nomes
             c.setFont("Helvetica", 9)
@@ -620,7 +625,7 @@ class PDFGenerator:
                      "WEG", "HonorSolar", "HUAWEI", "Risen", "TrinaSolar"]
             x_pos = 60
             for marca in marcas:
-                c.drawString(x_pos, y_pos + 40, marca)
+                c.drawString(x_pos, y_pos + 30, marca)
                 x_pos += 45
                 if x_pos > width - 100:
                     x_pos = 60
@@ -629,7 +634,7 @@ class PDFGenerator:
         # Garantia de instalação
         c.setFont("Helvetica-Bold", 11)
         c.setFillColor(colors.HexColor('#366092'))
-        c.drawCentredString(width/2, 100, "GARANTIA DE 1 ANO DA INSTALAÇÃO ELÉTRICA")
+        c.drawCentredString(width/2, 80, "GARANTIA DE 1 ANO DA INSTALAÇÃO ELÉTRICA")
         
         # Rodapé
         c.setFont("Helvetica", 8)
@@ -643,17 +648,3 @@ class PDFGenerator:
         
         buffer.seek(0)
         return buffer.getvalue()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
