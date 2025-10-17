@@ -209,13 +209,13 @@ class PDFGenerator:
             c.setFillColor(colors.white)
             c.rect(0, 0, width, height, fill=1)
         
-        # Apenas nome do cliente e número da proposta em preto
+        # Nome do cliente e número da proposta centralizados no meio da página
         c.setFillColor(colors.black)
-        c.setFont("Helvetica-Bold", 18)
-        c.drawCentredString(width/2, 200, dados['cliente']['nome'].upper())
+        c.setFont("Helvetica-Bold", 20)
+        c.drawCentredString(width/2, height/2, dados['cliente']['nome'].upper())
         
-        c.setFont("Helvetica", 14)
-        c.drawCentredString(width/2, 170, f"PROPOSTA {dados['numero_proposta']}")
+        c.setFont("Helvetica", 16)
+        c.drawCentredString(width/2, height/2 - 30, f"PROPOSTA {dados['numero_proposta']}")
         
         c.showPage()
         
@@ -427,17 +427,3 @@ class PDFGenerator:
         
         buffer.seek(0)
         return buffer.getvalue()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
