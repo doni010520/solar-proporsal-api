@@ -296,7 +296,7 @@ class PDFGenerator:
             ('BOTTOMPADDING', (0, 0), (-1, -1), 15),
         ]))
         elements.append(table_titulo)
-        elements.append(Spacer(1, 0.5*cm))
+        elements.append(Spacer(1, 0.3*cm))  # Reduzido de 0.5cm para 0.3cm
         
         # Cabeçalho da tabela
         header_data = [[
@@ -308,11 +308,11 @@ class PDFGenerator:
         table_header.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#E0E0E0')),
             ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
-            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('FONTSIZE', (0, 0), (-1, -1), 9),  # Reduzido de 10 para 9
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-            ('TOPPADDING', (0, 0), (-1, -1), 8),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+            ('TOPPADDING', (0, 0), (-1, -1), 6),  # Reduzido de 8 para 6
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),  # Reduzido de 8 para 6
         ]))
         elements.append(table_header)
         
@@ -329,11 +329,11 @@ class PDFGenerator:
         table_economia = Table(economia_data, colWidths=[8*cm, 8*cm])
         table_economia.setStyle(TableStyle([
             ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
-            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('FONTSIZE', (0, 0), (-1, -1), 9),  # Reduzido de 10 para 9
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-            ('TOPPADDING', (0, 0), (-1, -1), 6),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+            ('TOPPADDING', (0, 0), (-1, -1), 4),  # Reduzido de 6 para 4
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 4),  # Reduzido de 6 para 4
             # Alternar cores de fundo (zebrado)
             ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#F5F5F5')),
             ('BACKGROUND', (0, 2), (-1, 2), colors.HexColor('#F5F5F5')),
@@ -351,7 +351,7 @@ class PDFGenerator:
         ]))
         elements.append(table_economia)
         
-        elements.append(Spacer(1, 0.5*cm))
+        elements.append(Spacer(1, 0.3*cm))  # Reduzido de 0.5cm para 0.3cm
         
         # Nota sobre reajuste
         nota = Paragraph(
@@ -726,3 +726,21 @@ if __name__ == "__main__":
         f.write(pdf_bytes)
     
     print("PDF gerado: proposta_teste.pdf")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
