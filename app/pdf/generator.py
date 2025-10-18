@@ -284,7 +284,7 @@ class PDFGenerator:
         
         y_pos = height - 160
         y_pos = self._draw_section_header(c, y_pos, "Dados da Proposta", width)
-        y_pos -= self.SPACE_LARGE  # Aumentado de SPACE_MEDIUM para SPACE_LARGE
+        y_pos -= 30  # Espaçamento intermediário (nem muito, nem pouco)
 
         c.setFont(self.FONT_NORMAL, self.FONT_SIZE_BODY)
         c.setFillColor(self.COLOR_TEXT)
@@ -296,9 +296,9 @@ class PDFGenerator:
             c.drawString(220, y_pos, str(valor))
             y_pos -= self.LINE_SPACING
         
-        y_pos -= self.SPACE_MEDIUM  # Aumentado de SPACE_SMALL para SPACE_MEDIUM
+        y_pos -= 20  # Espaço antes do header
         y_pos = self._draw_section_header(c, y_pos, "Perfil de Consumo do Cliente", width)
-        y_pos -= self.SPACE_LARGE  # Aumentado de SPACE_MEDIUM para SPACE_LARGE
+        y_pos -= 30  # Espaço depois do header
         
         dados_consumo = [
             ("CONCESSIONÁRIA", "CPFL"), ("TIPO DE FORNECIMENTO", dados_sistema.get('tipo_fornecimento', 'N/A')),
@@ -312,9 +312,9 @@ class PDFGenerator:
             c.drawString(320, y_pos, str(valor))
             y_pos -= self.LINE_SPACING
             
-        y_pos -= self.SPACE_MEDIUM  # Aumentado de SPACE_SMALL para SPACE_MEDIUM
+        y_pos -= 20  # Espaço antes do header
         y_pos = self._draw_section_header(c, y_pos, "Sistema Fotovoltaico Proposto", width)
-        y_pos -= self.SPACE_LARGE  # Aumentado de SPACE_MEDIUM para SPACE_LARGE
+        y_pos -= 30  # Espaço depois do header
 
         dados_sfv = [
             ("NÚMERO DE MÓDULOS (un.)", f"{int(dados_sistema.get('num_modulos', 0))}"),
@@ -498,7 +498,7 @@ class PDFGenerator:
         try:
             logos_path = os.path.join(self.assets_path, "logos_fornecedores.png")
             if os.path.exists(logos_path):
-                c.drawImage(logos_path, 80, y_pos - 150, width=width-160, height=200, preserveAspectRatio=True, mask='auto')
+                c.drawImage(logos_path, 60, y_pos - 180, width=width-120, height=170, preserveAspectRatio=True, mask='auto')
         except:
             pass
         
