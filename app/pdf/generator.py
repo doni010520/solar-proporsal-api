@@ -284,7 +284,7 @@ class PDFGenerator:
         
         y_pos = height - 160
         y_pos = self._draw_section_header(c, y_pos, "Dados da Proposta", width)
-        y_pos -= 30  # Espaçamento intermediário (nem muito, nem pouco)
+        y_pos -= 20  # Conteúdo mais próximo da caixa
 
         c.setFont(self.FONT_NORMAL, self.FONT_SIZE_BODY)
         c.setFillColor(self.COLOR_TEXT)
@@ -296,9 +296,9 @@ class PDFGenerator:
             c.drawString(220, y_pos, str(valor))
             y_pos -= self.LINE_SPACING
         
-        y_pos -= 20  # Espaço antes do header
+        y_pos -= 30  # Maior separação entre seções
         y_pos = self._draw_section_header(c, y_pos, "Perfil de Consumo do Cliente", width)
-        y_pos -= 30  # Espaço depois do header
+        y_pos -= 20  # Conteúdo mais próximo da caixa
         
         dados_consumo = [
             ("CONCESSIONÁRIA", "CPFL"), ("TIPO DE FORNECIMENTO", dados_sistema.get('tipo_fornecimento', 'N/A')),
@@ -312,9 +312,9 @@ class PDFGenerator:
             c.drawString(320, y_pos, str(valor))
             y_pos -= self.LINE_SPACING
             
-        y_pos -= 20  # Espaço antes do header
+        y_pos -= 30  # Maior separação entre seções
         y_pos = self._draw_section_header(c, y_pos, "Sistema Fotovoltaico Proposto", width)
-        y_pos -= 30  # Espaço depois do header
+        y_pos -= 20  # Conteúdo mais próximo da caixa
 
         dados_sfv = [
             ("NÚMERO DE MÓDULOS (un.)", f"{int(dados_sistema.get('num_modulos', 0))}"),
