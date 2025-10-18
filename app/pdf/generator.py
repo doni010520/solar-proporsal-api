@@ -102,17 +102,46 @@ class PDFGenerator:
             pass
     
     def _clean_currency(self, value_str):
-        """Converte uma string de moeda para float de forma segura."""
+        """
+        Converte uma string de moeda para float de forma segura.
+        Trata formatos:
+        - R$ 10,416.00 (vírgula = milhar, ponto = decimal) 
+        - R$ 10.416,00 (ponto = milhar, vírgula = decimal)
+        - R$ 10416.00 (sem separador de milhar)
+        """
         if value_str is None:
             return 0.0
         try:
+            # Remove R$ e espaços
             s = str(value_str).replace("R$", "").strip()
+            
+            # Remove espaços internos
+            s = s.replace(" ", "")
+            
+            # Detecta o formato baseado na posição dos separadores
             if ',' in s and '.' in s:
-                s = s.replace('.', '').replace(',', '.')
+                # Verifica qual vem por último (é o decimal)
+                pos_virgula = s.rfind(',')
+                pos_ponto = s.rfind('.')
+                
+                if pos_ponto > pos_virgula:
+                    # Formato: 10,416.00 (vírgula = milhar, ponto = decimal)
+                    s = s.replace(',', '')  # Remove separador de milhar
+                else:
+                    # Formato: 10.416,00 (ponto = milhar, vírgula = decimal)
+                    s = s.replace('.', '').replace(',', '.')
             elif ',' in s:
-                s = s.replace(',', '.')
+                # Apenas vírgula: pode ser decimal brasileiro
+                # Se tiver mais de 2 dígitos após vírgula, é milhar
+                partes = s.split(',')
+                if len(partes[-1]) == 2:  # Formato: 123,45
+                    s = s.replace(',', '.')
+                else:  # Formato: 1,234 (milhar)
+                    s = s.replace(',', '')
+            
             return float(s)
-        except (ValueError, TypeError):
+        except (ValueError, TypeError) as e:
+            print(f"Erro ao converter '{value_str}': {e}")
             return 0.0
 
     def extrair_dados(self, dados_completos):
@@ -547,4 +576,3 @@ class PDFGenerator:
         c.save()
         buffer.seek(0)
         return buffer.getvalue()
-
