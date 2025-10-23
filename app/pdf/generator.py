@@ -294,8 +294,29 @@ class PDFGenerator:
                          ("ENDEREÇO", dados['cliente']['endereco']), ("CIDADE", dados['cliente']['cidade'])]
         for label, valor in dados_cliente:
             c.drawString(65, y_pos, f"{label}:")
-            c.drawString(220, y_pos, str(valor))
-            y_pos -= self.LINE_SPACING
+            
+            # Para endereço longo, quebra em múltiplas linhas
+            if label == "ENDEREÇO" and len(str(valor)) > 65:
+                texto = str(valor)
+                max_chars = 65
+                linhas = []
+                
+                while len(texto) > max_chars:
+                    pos_quebra = texto[:max_chars].rfind(' ')
+                    if pos_quebra == -1:
+                        pos_quebra = max_chars
+                    linhas.append(texto[:pos_quebra])
+                    texto = texto[pos_quebra:].strip()
+                
+                linhas.append(texto)
+                
+                for i, linha in enumerate(linhas):
+                    c.drawString(220, y_pos - (i * self.LINE_SPACING), linha)
+                
+                y_pos -= self.LINE_SPACING * len(linhas)
+            else:
+                c.drawString(220, y_pos, str(valor))
+                y_pos -= self.LINE_SPACING
         
         y_pos -= 30  # Maior separação entre seções
         y_pos = self._draw_section_header(c, y_pos, "Perfil de Consumo do Cliente", width)
