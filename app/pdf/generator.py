@@ -43,17 +43,17 @@ class PDFGenerator:
         self.COLOR_ACCENT_GOLD_HEX = '#f1c40f'
         self.COLOR_TEXT_HEX = '#34495e'
 
-        # --- FONTES ---
+        # --- FONTES (AUMENTADAS) ---
         self.FONT_BOLD = 'Helvetica-Bold'
         self.FONT_NORMAL = 'Helvetica'
         
-        # --- TAMANHOS DE FONTE ---
-        self.FONT_SIZE_TITLE = 22
-        self.FONT_SIZE_SUBTITLE = 16
-        self.FONT_SIZE_BODY_LARGE = 11
-        self.FONT_SIZE_BODY = 10
-        self.FONT_SIZE_BODY_SMALL = 9
-        self.FONT_SIZE_FOOTER = 8
+        # --- TAMANHOS DE FONTE (AUMENTADOS) ---
+        self.FONT_SIZE_TITLE = 26  # era 22
+        self.FONT_SIZE_SUBTITLE = 18  # era 16
+        self.FONT_SIZE_BODY_LARGE = 13  # era 11
+        self.FONT_SIZE_BODY = 12  # era 10
+        self.FONT_SIZE_BODY_SMALL = 11  # era 9
+        self.FONT_SIZE_FOOTER = 9  # era 8
 
         # --- ESPAÇAMENTOS ---
         self.SPACE_LARGE = 40
@@ -164,250 +164,265 @@ class PDFGenerator:
                 valor = item.get("col_7")
                 
                 key_map = {
-                    "Consumo Atual": "consumo_atual", "Quantidade de módulos": "num_modulos",
-                    "Potência do sistema": "potencia_kwp", "Potência do inversor": "potencia_inversor",
-                    "Área total instalada": "area_total", "Energia Média Gerada (mês)": "geracao_mensal",
-                    "Energia Média Gerada (ano)": "geracao_anual", "Valor da conta antes": "conta_antes",
-                    "Valor da conta depois": "conta_depois", "Preço do Sistema": "investimento",
-                    "Padrão do Cliente": "tipo_fornecimento"
+                    "Consumo Total Permitido (mês) kwh:": "consumo_atual", 
+                    "Quantidade de módulos necessários:": "num_modulos",
+                    "Potência do sistema (kWp):": "potencia_kwp", 
+                    "Potência do inversor:": "potencia_inversor",
+                    "Área total instalada (m²):": "area_total", 
+                    "Energia Média Gerada (mês) kwh:": "geracao_mensal",
+                    "Energia Média Gerada (ano) kwh:": "geracao_anual", 
+                    "Valor da conta antes do SFV:": "conta_antes",
+                    "Valor da conta depois do SFV:": "conta_depois", 
+                    "Preço do Sistema Dimensionado:": "investimento",
+                    "Padrão do Cliente:": "tipo_fornecimento"
                 }
                 for key, mapped_key in key_map.items():
-                    if key in campo:
-                        dados_sistema[mapped_key] = valor
-                        break
-
-        for key in ['num_modulos', 'investimento', 'conta_antes', 'area_total', 'geracao_mensal', 'consumo_atual']:
-            if key in dados_sistema and dados_sistema[key] is not None:
-                try:
-                    dados_sistema[key] = self._clean_currency(dados_sistema[key])
-                except (ValueError, TypeError):
-                    dados_sistema[key] = 0
-            else:
-                dados_sistema[key] = 0
-                
+                    if campo == key:
+                        if mapped_key == "num_modulos":
+                            dados_sistema[mapped_key] = int(float(valor)) if valor else 0
+                        elif mapped_key == "consumo_atual":
+                            # Consumo Total Permitido mantém as casas decimais
+                            dados_sistema[mapped_key] = float(valor) if valor else 0.0
+                        elif mapped_key == "tipo_fornecimento":
+                            dados_sistema[mapped_key] = str(valor) if valor else "N/A"
+                        elif mapped_key in ["potencia_kwp", "potencia_inversor", "area_total", "geracao_mensal", "geracao_anual"]:
+                            dados_sistema[mapped_key] = float(valor) if valor else 0.0
+                        else:
+                            dados_sistema[mapped_key] = self._clean_currency(valor)
+        
         return dados_sistema, dados_payback
-    
-    def gerar_grafico_payback(self, dados_payback):
-        """Gera o gráfico de payback com a nova paleta de cores."""
-        anos = [item["ano"] for item in dados_payback]
-        amortizacao = [item["amortizacao"] for item in dados_payback]
-        
-        fig, ax = plt.subplots(figsize=(10, 5))
-        cores = [self.COLOR_RED_NEGATIVE_HEX if valor < 0 else self.COLOR_ACCENT_GOLD_HEX for valor in amortizacao]
-        
-        ax.bar(anos, amortizacao, color=cores, width=0.7, edgecolor='none')
-        
-        ax.set_title('Análise de Retorno (Payback)', fontsize=16, fontweight='bold', pad=20, color=self.COLOR_TEXT_HEX)
-        ax.grid(True, axis='y', alpha=0.4, linestyle='--', linewidth=0.7)
-        ax.set_axisbelow(True)
-        
-        y_min = min(amortizacao) * 1.15 if min(amortizacao) < 0 else 0
-        y_max = max(amortizacao) * 1.15
-        ax.set_ylim(y_min, y_max)
-        
-        def format_currency(x, p):
-            s = f'R$ {x:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.')
-            return s
-        
-        from matplotlib.ticker import FuncFormatter
-        ax.yaxis.set_major_formatter(FuncFormatter(format_currency))
-        
-        ax.set_xticks(anos)
-        ax.tick_params(axis='x', labelsize=9)
-        ax.tick_params(axis='y', labelsize=9)
 
-        ax.axhline(y=0, color=self.COLOR_TEXT_HEX, linewidth=1, alpha=0.7)
-        ax.spines['top'].set_visible(False)
-        ax.spines['right'].set_visible(False)
-        ax.spines['left'].set_color('#dddddd')
-        ax.spines['bottom'].set_color('#dddddd')
-        
-        plt.tight_layout()
+    def gerar_pdf(self, dados_entrada, nome_cliente, cpf_cnpj, output_filename="proposta.pdf"):
+        """Gera um PDF de proposta completo."""
+        dados_sistema, dados_payback = self.extrair_dados(dados_entrada)
         
         buffer = BytesIO()
-        plt.savefig(buffer, format='png', dpi=150, bbox_inches='tight', facecolor='white', edgecolor='none')
-        buffer.seek(0)
-        plt.close()
-        return buffer
-    
-    def calcular_payback(self, dados_payback):
-        """Calcula o período de payback"""
-        for i, item in enumerate(dados_payback):
-            if item["amortizacao"] > 0 and i > 0:
-                valor_anterior = dados_payback[i-1]["amortizacao"]
-                if valor_anterior < 0:
-                    diferenca_anual = item["amortizacao"] - valor_anterior
-                    if diferenca_anual > 0:
-                        meses_para_zerar = (abs(valor_anterior) / (diferenca_anual / 12))
-                        anos = i - 1
-                        meses = int(meses_para_zerar)
-                        if meses >= 12:
-                            anos += meses // 12
-                            meses %= 12
-                        return anos, meses
-        return 0, 0
-    
-    def criar_proposta_completa(self, dados):
-        """Cria PDF completo com todos os dados e novo design."""
-        buffer = BytesIO()
-        dados_sistema, dados_payback = self.extrair_dados(dados["dados_completos"])
-        payback_anos, payback_meses = self.calcular_payback(dados_payback)
-        economia_total = dados_payback[-1]["amortizacao"] if dados_payback else 0
-        
         c = canvas.Canvas(buffer, pagesize=A4)
         width, height = A4
 
         # ========== PÁGINA 1: CAPA ==========
         try:
-            bg_path = os.path.join(self.assets_path, "capa_background.png")
-            if os.path.exists(bg_path):
-                c.drawImage(bg_path, 0, 0, width=width, height=height, preserveAspectRatio=False)
+            capa_path = os.path.join(self.assets_path, "capa_levesol.jpg")
+            if os.path.exists(capa_path):
+                c.drawImage(capa_path, 0, 0, width=width, height=height, preserveAspectRatio=False, mask='auto')
         except:
-            c.setFillColor(self.COLOR_WHITE)
-            c.rect(0, 0, width, height, fill=1)
+            pass
+
+        c.setFillColor(self.COLOR_WHITE)
+        c.setFont(self.FONT_BOLD, self.FONT_SIZE_TITLE + 4)  # Aumentado
+        c.drawCentredString(width/2, height - 500, "PROPOSTA COMERCIAL")
         
-        c.setFillColor(self.COLOR_PRIMARY_BLUE)
-        c.setFont(self.FONT_BOLD, 24)
-        c.drawCentredString(width/2, height/2 + 10, dados['cliente']['nome'].upper())
-        c.setFont(self.FONT_NORMAL, 18)
-        c.drawCentredString(width/2, height/2 - 20, f"PROPOSTA {dados['numero_proposta']}")
+        c.setFont(self.FONT_BOLD, self.FONT_SIZE_SUBTITLE + 2)  # Aumentado
+        c.drawCentredString(width/2, height - 540, f"CLIENTE: {nome_cliente.upper()}")
+        c.drawCentredString(width/2, height - 570, f"CPF/CNPJ: {cpf_cnpj}")
+        
+        c.setFont(self.FONT_NORMAL, self.FONT_SIZE_BODY)
+        c.drawCentredString(width/2, height - 610, f"Proposta gerada em {datetime.now().strftime('%d/%m/%Y')}")
         c.showPage()
-        
-        # ========== PÁGINA 2: DADOS DO SISTEMA ==========
+
+        # ========== PÁGINA 2: ANÁLISE DE CONSUMO ==========
         self.desenhar_fundo_interno(c, width, height)
         self._draw_header_logo(c, height)
+        
         c.setFillColor(self.COLOR_PRIMARY_BLUE)
         c.setFont(self.FONT_BOLD, self.FONT_SIZE_TITLE)
-        c.drawCentredString(width/2, height - 80, "Proposta Comercial")
-        c.setFont(self.FONT_NORMAL, self.FONT_SIZE_SUBTITLE)
-        c.drawCentredString(width/2, height - 105, "Sistema Fotovoltaico On-grid")
+        c.drawCentredString(width/2, height - 100, "Análise de Consumo")
         
         y_pos = height - 160
-        y_pos = self._draw_section_header(c, y_pos, "Dados da Proposta", width)
-        y_pos -= 20  # Conteúdo mais próximo da caixa
+        consumo = dados_sistema.get('consumo_atual', 0)
+        geracao_mensal = dados_sistema.get('geracao_mensal', 0)
+        tipo_fornecimento = dados_sistema.get('tipo_fornecimento', 'N/A')
 
-        c.setFont(self.FONT_NORMAL, self.FONT_SIZE_BODY)
-        c.setFillColor(self.COLOR_TEXT)
-        
-        dados_cliente = [("CLIENTE", dados['cliente']['nome'].upper()), ("CPF/CNPJ", dados['cliente']['cpf_cnpj']),
-                         ("ENDEREÇO", dados['cliente']['endereco']), ("CIDADE", dados['cliente']['cidade'])]
-        for label, valor in dados_cliente:
-            c.drawString(65, y_pos, f"{label}:")
-            c.drawString(220, y_pos, str(valor))
-            y_pos -= self.LINE_SPACING
-        
-        y_pos -= 30  # Maior separação entre seções
-        y_pos = self._draw_section_header(c, y_pos, "Perfil de Consumo do Cliente", width)
-        y_pos -= 20  # Conteúdo mais próximo da caixa
-        
-        dados_consumo = [
-            ("CONCESSIONÁRIA", "CPFL"), ("TIPO DE FORNECIMENTO", dados_sistema.get('tipo_fornecimento', 'N/A')),
-            ("TENSÃO", "220V"), ("ÍNDICE DE RADIAÇÃO (kWh/m²)", "5.0"),
-            ("CONSUMO MÉDIO ATUAL (kWh)", f"{dados_sistema.get('consumo_atual', 0):.0f}"),
-            ("GERAÇÃO MÉDIA MENSAL (kWh)", f"{dados_sistema.get('geracao_mensal', 0):.0f}"),
-            ("VALOR MÉDIO MENSAL DA CONTA", f"R$ {dados_sistema.get('conta_antes', 0):,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'))
+        info_data = [
+            ("Consumo Médio Mensal", f"{consumo:.2f} kWh"),
+            ("Geração Média Mensal Estimada", f"{geracao_mensal:.0f} kWh"),
+            ("Padrão de Fornecimento", tipo_fornecimento)
         ]
-        for label, valor in dados_consumo:
-            c.drawString(65, y_pos, f"{label}:")
-            c.drawString(320, y_pos, str(valor))
-            y_pos -= self.LINE_SPACING
-            
-        y_pos -= 30  # Maior separação entre seções
-        y_pos = self._draw_section_header(c, y_pos, "Sistema Fotovoltaico Proposto", width)
-        y_pos -= 20  # Conteúdo mais próximo da caixa
-
-        dados_sfv = [
-            ("NÚMERO DE MÓDULOS (un.)", f"{int(dados_sistema.get('num_modulos', 0))}"),
-            ("POTÊNCIA TOTAL DO SISTEMA (kWp)", f"{dados_sistema.get('potencia_kwp', 0)}"),
-            ("ÁREA NECESSÁRIA (m²)", f"{dados_sistema.get('area_total', 0):.0f}")
-        ]
-        for label, valor in dados_sfv:
-            c.drawString(65, y_pos, f"{label}:")
-            c.drawString(320, y_pos, str(valor))
-            y_pos -= self.LINE_SPACING
-
-        self._draw_footer(c, width)
-        c.showPage()
         
-        # ========== PÁGINA 3: ANÁLISE FINANCEIRA (GRÁFICO) ==========
-        self.desenhar_fundo_interno(c, width, height)
-        self._draw_header_logo(c, height)
-        c.setFillColor(self.COLOR_PRIMARY_BLUE)
-        c.setFont(self.FONT_BOLD, self.FONT_SIZE_TITLE)
-        c.drawCentredString(width/2, height - 80, "Análise Financeira")
-
-        y_pos = height - 140
-        c.setFillColor(self.COLOR_TEXT)
-        c.setFont(self.FONT_BOLD, self.FONT_SIZE_SUBTITLE)
-        c.drawCentredString(width/2, y_pos, "Investimento Total Proposto")
-        y_pos -= 30
-        c.setFillColor(self.COLOR_SUCCESS_GREEN)
-        c.setFont(self.FONT_BOLD, 28)
-        investimento_fmt = f"R$ {dados_sistema.get('investimento', 0):,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
-        c.drawCentredString(width/2, y_pos, investimento_fmt)
-        y_pos -= 25
-        c.setFont(self.FONT_NORMAL, self.FONT_SIZE_BODY_SMALL)
-        c.setFillColor(self.COLOR_TEXT_LIGHT)
-        c.drawCentredString(width/2, y_pos, "*Valor inicial, sujeito a alterações após visita técnica.")
-
-        if dados_payback:
-            grafico_buffer = self.gerar_grafico_payback(dados_payback)
-            img = ImageReader(grafico_buffer)
-            c.drawImage(img, 40, y_pos - 320, width=width - 80, height=300, preserveAspectRatio=True)
-
-        self._draw_footer(c, width)
-        c.showPage()
-
-        # ========== PÁGINA 4: ECONOMIA DE ENERGIA (TABELA MENSAL) ==========
-        self.desenhar_fundo_interno(c, width, height)
-        self._draw_header_logo(c, height)
-        c.setFillColor(self.COLOR_PRIMARY_BLUE)
-        c.setFont(self.FONT_BOLD, self.FONT_SIZE_TITLE)
-        c.drawCentredString(width/2, height - 80, "Projeção de Economia Mensal")
-        
-        y_pos = height - 130
-        
-        table_data = [("Ano", "Economia Média Mensal")]
-        for item in dados_payback[:21]:
-            table_data.append( (str(item['ano']), f"R$ {item['economia_mensal']:,.2f}") )
-
-        table = Table(table_data, colWidths=[150, 250])
-        table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), self.COLOR_PRIMARY_BLUE),
-            ('TEXTCOLOR', (0, 0), (-1, 0), self.COLOR_WHITE),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        info_table = Table(info_data, colWidths=[250, 200])
+        info_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (0, -1), self.COLOR_PRIMARY_BLUE),
+            ('BACKGROUND', (1, 0), (1, -1), self.COLOR_LIGHT_GRAY_BG),
+            ('TEXTCOLOR', (0, 0), (0, -1), self.COLOR_WHITE),
+            ('TEXTCOLOR', (1, 0), (1, -1), self.COLOR_TEXT),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-            ('FONTNAME', (0, 0), (-1, 0), self.FONT_BOLD),
-            ('FONTNAME', (0, 1), (-1, -1), self.FONT_NORMAL),
+            ('FONTNAME', (0, 0), (-1, -1), self.FONT_BOLD),
+            ('FONTSIZE', (0, 0), (-1, -1), self.FONT_SIZE_BODY),
             ('GRID', (0, 0), (-1, -1), 1, self.COLOR_BORDER),
-            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [self.COLOR_WHITE, self.COLOR_LIGHT_GRAY_BG]),
+            ('LEFTPADDING', (0,0), (-1,-1), 12), ('RIGHTPADDING', (0,0), (-1,-1), 12),
+            ('TOPPADDING', (0,0), (-1,-1), 10), ('BOTTOMPADDING', (0,0), (-1,-1), 10),
         ]))
         
-        table.wrapOn(c, width - 100, y_pos)
-        table.drawOn(c, (width-400)/2, y_pos - table._height)
-        y_pos -= table._height + self.SPACE_MEDIUM
+        info_table.wrapOn(c, width - 100, y_pos)
+        info_table.drawOn(c, (width - 450)/2, y_pos - info_table._height)
+        y_pos -= info_table._height + self.SPACE_LARGE
 
-        c.setFont(self.FONT_NORMAL, self.FONT_SIZE_BODY_SMALL)
-        c.setFillColor(self.COLOR_TEXT_LIGHT)
-        c.drawCentredString(width/2, y_pos, "*Cálculos baseados em um reajuste anual médio de 5% na tarifa de energia.")
+        c.setFont(self.FONT_BOLD, self.FONT_SIZE_SUBTITLE)
+        c.setFillColor(self.COLOR_PRIMARY_BLUE)
+        c.drawCentredString(width/2, y_pos, "Comparativo de Consumo Mensal")
+        y_pos -= 40
+
+        # Gráfico de barras
+        fig, ax = plt.subplots(figsize=(8, 4))
+        categorias = ['Consumo Atual', 'Geração Estimada']
+        valores = [consumo, geracao_mensal]
+        cores = [self.COLOR_RED_NEGATIVE_HEX, self.COLOR_ACCENT_GOLD_HEX]
+        bars = ax.bar(categorias, valores, color=cores, edgecolor=self.COLOR_TEXT_HEX, linewidth=1.5)
+        
+        for bar in bars:
+            height_bar = bar.get_height()
+            ax.text(bar.get_x() + bar.get_width()/2., height_bar, f'{height_bar:.0f} kWh',
+                    ha='center', va='bottom', fontsize=12, fontweight='bold', color=self.COLOR_TEXT_HEX)
+        
+        ax.set_ylabel('kWh', fontsize=12, fontweight='bold', color=self.COLOR_TEXT_HEX)
+        ax.set_title('Análise Comparativa', fontsize=14, fontweight='bold', color=self.COLOR_TEXT_HEX)
+        ax.tick_params(axis='both', labelsize=11, colors=self.COLOR_TEXT_HEX)
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.grid(axis='y', linestyle='--', alpha=0.3)
+        plt.tight_layout()
+        
+        img_buffer = BytesIO()
+        plt.savefig(img_buffer, format='png', dpi=150, bbox_inches='tight')
+        img_buffer.seek(0)
+        plt.close()
+        
+        c.drawImage(ImageReader(img_buffer), 80, y_pos - 250, width=width-160, height=230, preserveAspectRatio=True, mask='auto')
         
         self._draw_footer(c, width)
         c.showPage()
-        
-        # ========== PÁGINA 5: RETORNO DO INVESTIMENTO (RESUMO E SALDO) ==========
+
+        # ========== PÁGINA 3: SISTEMA FOTOVOLTAICO ==========
         self.desenhar_fundo_interno(c, width, height)
         self._draw_header_logo(c, height)
         c.setFillColor(self.COLOR_PRIMARY_BLUE)
         c.setFont(self.FONT_BOLD, self.FONT_SIZE_TITLE)
-        c.drawCentredString(width/2, height - 80, "Retorno do Investimento (Payback)")
+        c.drawCentredString(width/2, height - 100, "Sistema Fotovoltaico Proposto")
+
+        y_pos = height - 160
+        num_modulos = dados_sistema.get('num_modulos', 0)
+        potencia_kwp = dados_sistema.get('potencia_kwp', 0)
+        potencia_inversor = dados_sistema.get('potencia_inversor', 0)
+        area_total = dados_sistema.get('area_total', 0)
+
+        system_data = [
+            ("Quantidade de Módulos", f"{num_modulos} unidades"),
+            ("Potência do Sistema", f"{potencia_kwp:.2f} kWp"),
+            ("Potência do Inversor", f"{potencia_inversor:.2f} kW"),
+            ("Área Total Estimada", f"{area_total:.2f} m²")
+        ]
+
+        system_table = Table(system_data, colWidths=[250, 200])
+        system_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (0, -1), self.COLOR_PRIMARY_BLUE),
+            ('BACKGROUND', (1, 0), (1, -1), self.COLOR_LIGHT_GRAY_BG),
+            ('TEXTCOLOR', (0, 0), (0, -1), self.COLOR_WHITE),
+            ('TEXTCOLOR', (1, 0), (1, -1), self.COLOR_TEXT),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('FONTNAME', (0, 0), (-1, -1), self.FONT_BOLD),
+            ('FONTSIZE', (0, 0), (-1, -1), self.FONT_SIZE_BODY),
+            ('GRID', (0, 0), (-1, -1), 1, self.COLOR_BORDER),
+            ('LEFTPADDING', (0,0), (-1,-1), 12), ('RIGHTPADDING', (0,0), (-1,-1), 12),
+            ('TOPPADDING', (0,0), (-1,-1), 10), ('BOTTOMPADDING', (0,0), (-1,-1), 10),
+        ]))
+        system_table.wrapOn(c, width - 100, y_pos)
+        system_table.drawOn(c, (width - 450)/2, y_pos - system_table._height)
+        y_pos -= system_table._height + self.SPACE_LARGE
+
+        try:
+            sistema_path = os.path.join(self.assets_path, "sistema_fotovoltaico.jpg")
+            if os.path.exists(sistema_path):
+                c.drawImage(sistema_path, 60, y_pos - 300, width=width-120, height=280, preserveAspectRatio=True, mask='auto')
+        except:
+            pass
         
-        y_pos = height - 130
+        self._draw_footer(c, width)
+        c.showPage()
+
+        # ========== PÁGINA 4: INVESTIMENTO ==========
+        self.desenhar_fundo_interno(c, width, height)
+        self._draw_header_logo(c, height)
+        c.setFillColor(self.COLOR_PRIMARY_BLUE)
+        c.setFont(self.FONT_BOLD, self.FONT_SIZE_TITLE)
+        c.drawCentredString(width/2, height - 100, "Investimento e Formas de Pagamento")
+
+        y_pos = height - 160
+        investimento = dados_sistema.get('investimento', 0)
+        
+        c.setFont(self.FONT_BOLD, self.FONT_SIZE_SUBTITLE)
+        c.setFillColor(self.COLOR_SUCCESS_GREEN)
+        c.drawCentredString(width/2, y_pos, "VALOR TOTAL DO INVESTIMENTO")
+        y_pos -= 35
+        c.setFont(self.FONT_BOLD, 32)  # Aumentado
+        c.drawCentredString(width/2, y_pos, f"R$ {investimento:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'))
+        y_pos -= self.SPACE_LARGE + 10
+
+        c.setFont(self.FONT_BOLD, self.FONT_SIZE_SUBTITLE)
+        c.setFillColor(self.COLOR_PRIMARY_BLUE)
+        c.drawCentredString(width/2, y_pos, "Formas de Pagamento")
+        y_pos -= self.SPACE_MEDIUM
+
+        payment_data = [
+            ("À VISTA (PIX)", f"R$ {investimento:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')),
+            ("PARCELADO EM ATÉ 12X", "Sujeito à aprovação de crédito")
+        ]
+        payment_table = Table(payment_data, colWidths=[280, 220])
+        payment_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), self.COLOR_LIGHT_GREEN_BG),
+            ('TEXTCOLOR', (0, 0), (-1, -1), self.COLOR_TEXT),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('FONTNAME', (0, 0), (-1, -1), self.FONT_BOLD),
+            ('FONTSIZE', (0, 0), (-1, -1), self.FONT_SIZE_BODY),
+            ('GRID', (0, 0), (-1, -1), 1.5, self.COLOR_SUCCESS_GREEN),
+            ('LEFTPADDING', (0,0), (-1,-1), 15), ('RIGHTPADDING', (0,0), (-1,-1), 15),
+            ('TOPPADDING', (0,0), (-1,-1), 12), ('BOTTOMPADDING', (0,0), (-1,-1), 12),
+        ]))
+        payment_table.wrapOn(c, width - 100, y_pos)
+        payment_table.drawOn(c, (width - 500)/2, y_pos - payment_table._height)
+        y_pos -= payment_table._height + self.SPACE_LARGE
+
+        c.setFont(self.FONT_BOLD, self.FONT_SIZE_BODY_LARGE)
         c.setFillColor(self.COLOR_TEXT)
+        c.drawCentredString(width/2, y_pos, "ECONOMIA MENSAL ESTIMADA")
+        y_pos -= 30
+        
+        conta_antes = dados_sistema.get('conta_antes', 0)
+        conta_depois = dados_sistema.get('conta_depois', 0)
+        economia_mensal = conta_antes - conta_depois
+        
+        c.setFillColor(self.COLOR_SUCCESS_GREEN)
+        c.setFont(self.FONT_BOLD, 28)  # Aumentado
+        c.drawCentredString(width/2, y_pos, f"R$ {economia_mensal:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'))
+        y_pos -= 30
+        c.setFont(self.FONT_NORMAL, self.FONT_SIZE_BODY)
+        c.setFillColor(self.COLOR_TEXT)
+        c.drawCentredString(width/2, y_pos, f"(De R$ {conta_antes:,.2f} para R$ {conta_depois:,.2f})".replace(',', 'X').replace('.', ',').replace('X', '.'))
+        
+        self._draw_footer(c, width)
+        c.showPage()
+
+        # ========== PÁGINA 5: PAYBACK ==========
+        self.desenhar_fundo_interno(c, width, height)
+        self._draw_header_logo(c, height)
+        c.setFillColor(self.COLOR_PRIMARY_BLUE)
+        c.setFont(self.FONT_BOLD, self.FONT_SIZE_TITLE)
+        c.drawCentredString(width/2, height - 100, "Análise Financeira")
+
+        y_pos = height - 160
+        payback_item = next((item for item in dados_payback if item['amortizacao'] >= 0), None)
+        payback_anos = payback_item['ano'] if payback_item else 0
+        payback_meses = 0
+        
+        economia_total = sum(item['economia_mensal'] * 12 for item in dados_payback[:21])
+        
         c.setFont(self.FONT_BOLD, self.FONT_SIZE_SUBTITLE)
         c.drawCentredString(width/2, y_pos, "Tempo Estimado para Retorno")
         y_pos -= 30
         c.setFillColor(self.COLOR_SUCCESS_GREEN)
-        c.setFont(self.FONT_BOLD, 28)
+        c.setFont(self.FONT_BOLD, 30)  # Aumentado
         c.drawCentredString(width/2, y_pos, f"{payback_anos} anos e {payback_meses} meses")
 
         y_pos -= self.SPACE_LARGE
@@ -416,7 +431,7 @@ class PDFGenerator:
         c.drawCentredString(width/2, y_pos, "Projeção de Caixa Acumulado (21 anos)")
         y_pos -= 30
         c.setFillColor(self.COLOR_SUCCESS_GREEN)
-        c.setFont(self.FONT_BOLD, 28)
+        c.setFont(self.FONT_BOLD, 30)  # Aumentado
         c.drawCentredString(width/2, y_pos, f"R$ {economia_total:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'))
         y_pos -= self.SPACE_MEDIUM
 
@@ -436,6 +451,7 @@ class PDFGenerator:
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
             ('FONTNAME', (0, 0), (-1, 0), self.FONT_BOLD),
             ('FONTNAME', (0, 1), (-1, -1), self.FONT_NORMAL),
+            ('FONTSIZE', (0, 0), (-1, -1), self.FONT_SIZE_BODY),  # Fonte da tabela aumentada
             ('GRID', (0, 0), (-1, -1), 1, self.COLOR_BORDER),
             ('ROWBACKGROUNDS', (0, 1), (-1, -1), [self.COLOR_WHITE, self.COLOR_LIGHT_GRAY_BG]),
         ])
@@ -460,10 +476,16 @@ class PDFGenerator:
         num_modulos = int(dados_sistema.get('num_modulos', 0))
         potencia_inversor = dados_sistema.get('potencia_inversor', 'N/A')
         
+        # MODIFICADO: Adicionadas as 3 marcas de módulos e inversores
         servicos = [
-            (f"{num_modulos} MÓDULOS FOTOVOLTAICOS RISEN 700W",), (f"1 INVERSOR SOLAR DEYE {potencia_inversor}KW",),
-            ("ESTRUTURA COMPLETA PARA MONTAGEM",), ("PROTEÇÃO E CABEAMENTO CA/CC",), ("HOMOLOGAÇÃO",),
-            ("INSTALAÇÃO E MÃO DE OBRA",), ("MONITORAMENTO",), ("FRETE",)
+            (f"{num_modulos} MÓDULOS FOTOVOLTAICOS RISEN / HONOR / SUNX 700W",),
+            (f"1 INVERSOR SOLAR DEYE / GROWATT / SOLIS {potencia_inversor}KW",),
+            ("ESTRUTURA COMPLETA PARA MONTAGEM",),
+            ("PROTEÇÃO E CABEAMENTO CA/CC",),
+            ("HOMOLOGAÇÃO",),
+            ("INSTALAÇÃO E MÃO DE OBRA",),
+            ("MONITORAMENTO",),
+            ("FRETE",)
         ]
 
         table = Table(servicos, colWidths=[width - 120])
@@ -474,11 +496,13 @@ class PDFGenerator:
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
             ('FONTNAME', (0, 0), (-1, -1), self.FONT_NORMAL),
-            ('FONTSIZE', (0, 0), (-1, -1), self.FONT_SIZE_BODY),
+            ('FONTSIZE', (0, 0), (-1, -1), self.FONT_SIZE_BODY),  # Fonte aumentada
             ('INNERGRID', (0, 0), (-1, -1), 0.25, self.COLOR_BORDER),
             ('BOX', (0, 0), (-1, -1), 1, self.COLOR_BORDER),
-            ('LEFTPADDING', (0,0), (-1,-1), 20), ('RIGHTPADDING', (0,0), (-1,-1), 20),
-            ('TOPPADDING', (0,0), (-1,-1), 12), ('BOTTOMPADDING', (0,0), (-1,-1), 12),
+            ('LEFTPADDING', (0,0), (-1,-1), 20),
+            ('RIGHTPADDING', (0,0), (-1,-1), 20),
+            ('TOPPADDING', (0,0), (-1,-1), 14),  # Aumentado
+            ('BOTTOMPADDING', (0,0), (-1,-1), 14),  # Aumentado
         ]))
         table.wrapOn(c, width - 100, y_pos)
         table.drawOn(c, 60, y_pos - table._height)
@@ -517,13 +541,19 @@ class PDFGenerator:
         c.drawCentredString(width/2, height - 80, "Prazos e Validade")
 
         y_pos = height - 140
-        c.setFont(self.FONT_BOLD, self.FONT_SIZE_BODY)
+        c.setFont(self.FONT_BOLD, self.FONT_SIZE_BODY_LARGE)  # Aumentado
         c.setFillColor(self.COLOR_TEXT)
         c.drawString(70, y_pos, "PROPOSTA VÁLIDA POR 10 DIAS OU ENQUANTO DURAREM OS ESTOQUES.")
         y_pos -= self.SPACE_MEDIUM
 
-        text_style = ParagraphStyle(name='Terms', fontName=self.FONT_NORMAL, fontSize=self.FONT_SIZE_BODY,
-                                    textColor=self.COLOR_TEXT, leading=self.LINE_SPACING, spaceAfter=self.SPACE_SMALL)
+        text_style = ParagraphStyle(
+            name='Terms',
+            fontName=self.FONT_NORMAL,
+            fontSize=self.FONT_SIZE_BODY,
+            textColor=self.COLOR_TEXT,
+            leading=self.LINE_SPACING + 2,  # Aumentado
+            spaceAfter=self.SPACE_SMALL
+        )
         
         text_items = [
             "<b>Entrega dos Equipamentos:</b> 30 a 60 dias após pagamento da entrada ou valor integral.",
@@ -538,7 +568,7 @@ class PDFGenerator:
             y_pos -= p_h + self.SPACE_SMALL
 
         y_pos -= self.SPACE_MEDIUM
-        c.setFont(self.FONT_BOLD, self.FONT_SIZE_BODY)
+        c.setFont(self.FONT_BOLD, self.FONT_SIZE_BODY_LARGE)  # Aumentado
         c.drawString(70, y_pos, "No aceite desta proposta, favor preencher e assinar os campos abaixo:")
         y_pos -= self.SPACE_LARGE
         
@@ -553,12 +583,13 @@ class PDFGenerator:
             c.line(field_x_start[i], y_pos - 2, width - 70, y_pos - 2)
             y_pos -= self.SPACE_LARGE
         
-        y_pos -= 60 # Ajuste para descer a assinatura
+        y_pos -= 60
         try:
             assinatura_path = os.path.join(self.assets_path, "assinatura_gabriel.png")
             if os.path.exists(assinatura_path):
                 c.drawImage(assinatura_path, 70, y_pos, width=180, height=70, preserveAspectRatio=True, mask='auto')
-        except: pass
+        except:
+            pass
         
         c.line(70, y_pos - 2, 350, y_pos - 2)
         y_pos -= self.SPACE_SMALL
