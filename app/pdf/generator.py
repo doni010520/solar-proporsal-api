@@ -296,20 +296,47 @@ class PDFGenerator:
             c.drawString(65, y_pos, f"{label}:")
             
             # Para endereço longo, quebra em múltiplas linhas
-            if label == "ENDEREÇO" and len(str(valor)) > 65:
+            if label == "ENDEREÇO" and len(str(valor)) > 60:
                 texto = str(valor)
-                max_chars = 65
                 linhas = []
+                max_chars = 60
                 
-                while len(texto) > max_chars:
-                    pos_quebra = texto[:max_chars].rfind(' ')
-                    if pos_quebra == -1:
-                        pos_quebra = max_chars
-                    linhas.append(texto[:pos_quebra])
-                    texto = texto[pos_quebra:].strip()
+                # Se tem CEP, tenta quebrar ANTES do CEP
+                if 'CEP:' in texto or 'CEP' in texto:
+                    pos_cep = texto.find('CEP')
+                    if pos_cep > 0:
+                        parte_antes_cep = texto[:pos_cep].rstrip(', ')
+                        parte_cep = texto[pos_cep:].strip()
+                        
+                        # Se a parte ANTES do CEP for muito longa, quebra ela também
+                        if len(parte_antes_cep) > max_chars:
+                            temp_linhas = []
+                            temp_texto = parte_antes_cep
+                            while len(temp_texto) > max_chars:
+                                pos_quebra = temp_texto[:max_chars].rfind(' ')
+                                if pos_quebra == -1:
+                                    pos_quebra = max_chars
+                                temp_linhas.append(temp_texto[:pos_quebra].rstrip(','))
+                                temp_texto = temp_texto[pos_quebra:].strip()
+                            temp_linhas.append(temp_texto)
+                            linhas = temp_linhas
+                        else:
+                            linhas = [parte_antes_cep]
+                        
+                        # Adiciona o CEP como última linha
+                        linhas.append(parte_cep)
                 
-                linhas.append(texto)
+                # Se não tem CEP ou não conseguiu quebrar, usa quebra normal
+                if not linhas:
+                    while len(texto) > max_chars:
+                        pos_quebra = texto[:max_chars].rfind(' ')
+                        if pos_quebra == -1:
+                            pos_quebra = max_chars
+                        linhas.append(texto[:pos_quebra].rstrip(','))
+                        texto = texto[pos_quebra:].strip()
+                    linhas.append(texto)
                 
+                # Desenha cada linha
                 for i, linha in enumerate(linhas):
                     c.drawString(220, y_pos - (i * self.LINE_SPACING), linha)
                 
