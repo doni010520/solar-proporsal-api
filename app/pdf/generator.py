@@ -192,6 +192,75 @@ class PDFGenerator:
         
         return dados_sistema, dados_payback
 
+    def gerar_grafico_payback(self, dados_payback):
+        """Gera o gráfico de payback com a nova paleta de cores."""
+        anos = [item["ano"] for item in dados_payback]
+        amortizacao = [item["amortizacao"] for item in dados_payback]
+        
+        fig, ax = plt.subplots(figsize=(10, 5))
+        cores = [self.COLOR_RED_NEGATIVE_HEX if valor < 0 else self.COLOR_ACCENT_GOLD_HEX for valor in amortizacao]
+        
+        ax.bar(anos, amortizacao, color=cores, width=0.7, edgecolor='none')
+        
+        ax.set_title('Análise de Retorno (Payback)', fontsize=16, fontweight='bold', pad=20, color=self.COLOR_TEXT_HEX)
+        ax.grid(True, axis='y', alpha=0.4, linestyle='--', linewidth=0.7)
+        ax.set_axisbelow(True)
+        
+        y_min = min(amortizacao) * 1.15 if min(amortizacao) < 0 else 0
+        y_max = max(amortizacao) * 1.15
+        ax.set_ylim(y_min, y_max)
+        
+        def format_currency(x, p):
+            s = f'R$ {x:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.')
+            return s
+        
+        from matplotlib.ticker import FuncFormatter
+        ax.yaxis.set_major_formatter(FuncFormatter(format_currency))
+        
+        ax.set_xticks(anos)
+        ax.tick_params(axis='x', labelsize=9)
+        ax.tick_params(axis='y', labelsize=9)
+
+        ax.axhline(y=0, color=self.COLOR_TEXT_HEX, linewidth=1, alpha=0.7)
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.spines['left'].set_color('#dddddd')
+        ax.spines['bottom'].set_color('#dddddd')
+        
+        plt.tight_layout()
+        
+        buffer = BytesIO()
+        plt.savefig(buffer, format='png', dpi=150, bbox_inches='tight', facecolor='white', edgecolor='none')
+        buffer.seek(0)
+        plt.close()
+        return buffer
+    
+    def calcular_payback(self, dados_payback):
+        """Calcula o período de payback"""
+        for i, item in enumerate(dados_payback):
+            if item["amortizacao"] > 0 and i > 0:
+                valor_anterior = dados_payback[i-1]["amortizacao"]
+                if valor_anterior < 0:
+                    diferenca_anual = item["amortizacao"] - valor_anterior
+                    if diferenca_anual > 0:
+                        meses_para_zerar = (abs(valor_anterior) / (diferenca_anual / 12))
+                        anos = i - 1
+                        meses = int(meses_para_zerar)
+                        if meses >= 12:
+                            anos += meses // 12
+                            meses %= 12
+                        return anos, meses
+        return 0, 0
+    
+    def criar_proposta_completa(self, dados):
+        """Wrapper para manter compatibilidade com a API - chama gerar_pdf()"""
+        return self.gerar_pdf(
+            dados_entrada=dados["dados_completos"],
+            nome_cliente=dados["cliente"]["nome"],
+            cpf_cnpj=dados["cliente"].get("cpf_cnpj", "N/A"),
+            output_filename="proposta.pdf"
+        )
+
     def gerar_pdf(self, dados_entrada, nome_cliente, cpf_cnpj, output_filename="proposta.pdf"):
         """Gera um PDF de proposta completo."""
         dados_sistema, dados_payback = self.extrair_dados(dados_entrada)
