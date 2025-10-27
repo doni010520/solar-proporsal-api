@@ -48,12 +48,12 @@ class PDFGenerator:
         self.FONT_NORMAL = 'Helvetica'
         
         # --- TAMANHOS DE FONTE ---
-        self.FONT_SIZE_TITLE = 26  # era 22 - AUMENTADO
-        self.FONT_SIZE_SUBTITLE = 18  # era 16 - AUMENTADO
-        self.FONT_SIZE_BODY_LARGE = 13  # era 11 - AUMENTADO
-        self.FONT_SIZE_BODY = 12  # era 10 - AUMENTADO
-        self.FONT_SIZE_BODY_SMALL = 11  # era 9 - AUMENTADO
-        self.FONT_SIZE_FOOTER = 9  # era 8 - AUMENTADO
+        self.FONT_SIZE_TITLE = 26
+        self.FONT_SIZE_SUBTITLE = 18
+        self.FONT_SIZE_BODY_LARGE = 13
+        self.FONT_SIZE_BODY = 12
+        self.FONT_SIZE_BODY_SMALL = 11
+        self.FONT_SIZE_FOOTER = 9
 
         # --- ESPAÇAMENTOS ---
         self.SPACE_LARGE = 40
@@ -104,39 +104,26 @@ class PDFGenerator:
     def _clean_currency(self, value_str):
         """
         Converte uma string de moeda para float de forma segura.
-        Trata formatos:
-        - R$ 10,416.00 (vírgula = milhar, ponto = decimal) 
-        - R$ 10.416,00 (ponto = milhar, vírgula = decimal)
-        - R$ 10416.00 (sem separador de milhar)
         """
         if value_str is None:
             return 0.0
         try:
-            # Remove R$ e espaços
             s = str(value_str).replace("R$", "").strip()
-            
-            # Remove espaços internos
             s = s.replace(" ", "")
             
-            # Detecta o formato baseado na posição dos separadores
             if ',' in s and '.' in s:
-                # Verifica qual vem por último (é o decimal)
                 pos_virgula = s.rfind(',')
                 pos_ponto = s.rfind('.')
                 
                 if pos_ponto > pos_virgula:
-                    # Formato: 10,416.00 (vírgula = milhar, ponto = decimal)
-                    s = s.replace(',', '')  # Remove separador de milhar
+                    s = s.replace(',', '')
                 else:
-                    # Formato: 10.416,00 (ponto = milhar, vírgula = decimal)
                     s = s.replace('.', '').replace(',', '.')
             elif ',' in s:
-                # Apenas vírgula: pode ser decimal brasileiro
-                # Se tiver mais de 2 dígitos após vírgula, é milhar
                 partes = s.split(',')
-                if len(partes[-1]) == 2:  # Formato: 123,45
+                if len(partes[-1]) == 2:
                     s = s.replace(',', '.')
-                else:  # Formato: 1,234 (milhar)
+                else:
                     s = s.replace(',', '')
             
             return float(s)
@@ -164,7 +151,7 @@ class PDFGenerator:
                 valor = item.get("col_7")
                 
                 key_map = {
-                    "Consumo Total Permitido (mês) kwh:": "consumo_atual",  # MUDADO
+                    "Consumo Total Permitido (mês) kwh:": "consumo_atual",
                     "Quantidade de módulos": "num_modulos",
                     "Potência do sistema": "potencia_kwp", "Potência do inversor": "potencia_inversor",
                     "Área total instalada": "area_total", "Energia Média Gerada (mês)": "geracao_mensal",
@@ -285,7 +272,7 @@ class PDFGenerator:
         
         y_pos = height - 160
         y_pos = self._draw_section_header(c, y_pos, "Dados da Proposta", width)
-        y_pos -= 20  # Conteúdo mais próximo da caixa
+        y_pos -= 20
 
         c.setFont(self.FONT_NORMAL, self.FONT_SIZE_BODY)
         c.setFillColor(self.COLOR_TEXT)
@@ -295,20 +282,17 @@ class PDFGenerator:
         for label, valor in dados_cliente:
             c.drawString(65, y_pos, f"{label}:")
             
-            # Para endereço longo, quebra em múltiplas linhas
             if label == "ENDEREÇO" and len(str(valor)) > 60:
                 texto = str(valor)
                 linhas = []
                 max_chars = 60
                 
-                # Se tem CEP, tenta quebrar ANTES do CEP
                 if 'CEP:' in texto or 'CEP' in texto:
                     pos_cep = texto.find('CEP')
                     if pos_cep > 0:
                         parte_antes_cep = texto[:pos_cep].rstrip(', ')
                         parte_cep = texto[pos_cep:].strip()
                         
-                        # Se a parte ANTES do CEP for muito longa, quebra ela também
                         if len(parte_antes_cep) > max_chars:
                             temp_linhas = []
                             temp_texto = parte_antes_cep
@@ -323,10 +307,8 @@ class PDFGenerator:
                         else:
                             linhas = [parte_antes_cep]
                         
-                        # Adiciona o CEP como última linha
                         linhas.append(parte_cep)
                 
-                # Se não tem CEP ou não conseguiu quebrar, usa quebra normal
                 if not linhas:
                     while len(texto) > max_chars:
                         pos_quebra = texto[:max_chars].rfind(' ')
@@ -336,7 +318,6 @@ class PDFGenerator:
                         texto = texto[pos_quebra:].strip()
                     linhas.append(texto)
                 
-                # Desenha cada linha
                 for i, linha in enumerate(linhas):
                     c.drawString(220, y_pos - (i * self.LINE_SPACING), linha)
                 
@@ -345,9 +326,9 @@ class PDFGenerator:
                 c.drawString(220, y_pos, str(valor))
                 y_pos -= self.LINE_SPACING
         
-        y_pos -= 30  # Maior separação entre seções
+        y_pos -= 30
         y_pos = self._draw_section_header(c, y_pos, "Perfil de Consumo do Cliente", width)
-        y_pos -= 20  # Conteúdo mais próximo da caixa
+        y_pos -= 20
         
         dados_consumo = [
             ("CONCESSIONÁRIA", "CPFL"), ("TIPO DE FORNECIMENTO", dados_sistema.get('tipo_fornecimento', 'N/A')),
@@ -361,9 +342,9 @@ class PDFGenerator:
             c.drawString(320, y_pos, str(valor))
             y_pos -= self.LINE_SPACING
             
-        y_pos -= 30  # Maior separação entre seções
+        y_pos -= 30
         y_pos = self._draw_section_header(c, y_pos, "Sistema Fotovoltaico Proposto", width)
-        y_pos -= 20  # Conteúdo mais próximo da caixa
+        y_pos -= 20
 
         dados_sfv = [
             ("NÚMERO DE MÓDULOS (un.)", f"{int(dados_sistema.get('num_modulos', 0))}"),
@@ -375,6 +356,132 @@ class PDFGenerator:
             c.drawString(320, y_pos, str(valor))
             y_pos -= self.LINE_SPACING
 
+        self._draw_footer(c, width)
+        c.showPage()
+        
+        # ========== PÁGINA 3: ANÁLISE FINANCEIRA (GRÁFICO) ==========
+        self.desenhar_fundo_interno(c, width, height)
+        self._draw_header_logo(c, height)
+        c.setFillColor(self.COLOR_PRIMARY_BLUE)
+        c.setFont(self.FONT_BOLD, self.FONT_SIZE_TITLE)
+        c.drawCentredString(width/2, height - 80, "Análise Financeira")
+
+        y_pos = height - 160
+        c.setFillColor(self.COLOR_TEXT)
+        c.setFont(self.FONT_BOLD, self.FONT_SIZE_SUBTITLE)
+        c.drawCentredString(width/2, y_pos, "Investimento Total Proposto")
+        y_pos -= 30
+        c.setFillColor(self.COLOR_SUCCESS_GREEN)
+        c.setFont(self.FONT_BOLD, 28)
+        investimento_fmt = f"R$ {dados_sistema.get('investimento', 0):,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+        c.drawCentredString(width/2, y_pos, investimento_fmt)
+        y_pos -= 25
+        c.setFont(self.FONT_NORMAL, self.FONT_SIZE_BODY_SMALL)
+        c.setFillColor(self.COLOR_TEXT_LIGHT)
+        c.drawCentredString(width/2, y_pos, "*Valor inicial, sujeito a alterações após visita técnica.")
+
+        if dados_payback:
+            grafico_buffer = self.gerar_grafico_payback(dados_payback)
+            img = ImageReader(grafico_buffer)
+            
+            grafico_width = width - 80
+            grafico_height = 300
+            x_pos = (width - grafico_width) / 2
+            y_pos_grafico = 185
+
+            c.drawImage(img, x_pos, y_pos_grafico, width=grafico_width, height=grafico_height, preserveAspectRatio=True)
+
+        self._draw_footer(c, width)
+        c.showPage()
+
+        # ========== PÁGINA 4: ECONOMIA DE ENERGIA (TABELA MENSAL) ==========
+        self.desenhar_fundo_interno(c, width, height)
+        self._draw_header_logo(c, height)
+        c.setFillColor(self.COLOR_PRIMARY_BLUE)
+        c.setFont(self.FONT_BOLD, self.FONT_SIZE_TITLE)
+        c.drawCentredString(width/2, height - 80, "Projeção de Economia Mensal")
+        
+        y_pos = height - 180
+        
+        table_data = [("Ano", "Economia Média Mensal")]
+        for item in dados_payback[:21]:
+            table_data.append( (str(item['ano']), f"R$ {item['economia_mensal']:,.2f}") )
+
+        table = Table(table_data, colWidths=[150, 250])
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), self.COLOR_PRIMARY_BLUE),
+            ('TEXTCOLOR', (0, 0), (-1, 0), self.COLOR_WHITE),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('FONTNAME', (0, 0), (-1, 0), self.FONT_BOLD),
+            ('FONTNAME', (0, 1), (-1, -1), self.FONT_NORMAL),
+            ('GRID', (0, 0), (-1, -1), 1, self.COLOR_BORDER),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [self.COLOR_WHITE, self.COLOR_LIGHT_GRAY_BG]),
+        ]))
+        
+        table.wrapOn(c, width - 100, y_pos)
+        table.drawOn(c, (width - 400) / 2, y_pos - table._height)
+        y_pos -= table._height + self.SPACE_MEDIUM
+
+        c.setFont(self.FONT_NORMAL, self.FONT_SIZE_BODY_SMALL)
+        c.setFillColor(self.COLOR_TEXT_LIGHT)
+        c.drawCentredString(width/2, y_pos, "*Cálculos baseados em um reajuste anual médio de 5% na tarifa de energia.")
+        
+        self._draw_footer(c, width)
+        c.showPage()
+        
+        # ========== PÁGINA 5: RETORNO DO INVESTIMENTO (RESUMO E SALDO) ==========
+        self.desenhar_fundo_interno(c, width, height)
+        self._draw_header_logo(c, height)
+        c.setFillColor(self.COLOR_PRIMARY_BLUE)
+        c.setFont(self.FONT_BOLD, self.FONT_SIZE_TITLE)
+        c.drawCentredString(width/2, height - 80, "Retorno do Investimento (Payback)")
+        
+        y_pos = height - 150
+        c.setFillColor(self.COLOR_TEXT)
+        c.setFont(self.FONT_BOLD, self.FONT_SIZE_SUBTITLE)
+        c.drawCentredString(width/2, y_pos, "Tempo Estimado para Retorno")
+        y_pos -= 30
+        c.setFillColor(self.COLOR_SUCCESS_GREEN)
+        c.setFont(self.FONT_BOLD, 28)
+        c.drawCentredString(width/2, y_pos, f"{payback_anos} anos e {payback_meses} meses")
+
+        y_pos -= self.SPACE_LARGE
+        c.setFillColor(self.COLOR_TEXT)
+        c.setFont(self.FONT_BOLD, self.FONT_SIZE_SUBTITLE)
+        c.drawCentredString(width/2, y_pos, "Projeção de Caixa Acumulado (21 anos)")
+        y_pos -= 30
+        c.setFillColor(self.COLOR_SUCCESS_GREEN)
+        c.setFont(self.FONT_BOLD, 28)
+        c.drawCentredString(width/2, y_pos, f"R$ {economia_total:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'))
+        y_pos -= self.SPACE_MEDIUM
+
+        table_data = [("Ano", "Saldo Acumulado")]
+        dynamic_styles = []
+        for i, item in enumerate(dados_payback[:21]):
+            saldo = item['amortizacao']
+            table_data.append( (str(item['ano']), f"R$ {saldo:,.2f}") )
+            if saldo < 0:
+                dynamic_styles.append(('TEXTCOLOR', (1, i + 1), (1, i + 1), self.COLOR_RED_NEGATIVE))
+
+        table = Table(table_data, colWidths=[150, 250])
+        style = TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), self.COLOR_PRIMARY_BLUE),
+            ('TEXTCOLOR', (0, 0), (-1, 0), self.COLOR_WHITE),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('FONTNAME', (0, 0), (-1, 0), self.FONT_BOLD),
+            ('FONTNAME', (0, 1), (-1, -1), self.FONT_NORMAL),
+            ('GRID', (0, 0), (-1, -1), 1, self.COLOR_BORDER),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [self.COLOR_WHITE, self.COLOR_LIGHT_GRAY_BG]),
+        ])
+        for s in dynamic_styles:
+            style.add(*s)
+        table.setStyle(style)
+        
+        table.wrapOn(c, width - 100, y_pos)
+        table.drawOn(c, (width-400)/2, y_pos - table._height)
+        
         self._draw_footer(c, width)
         c.showPage()
         
@@ -439,134 +546,6 @@ class PDFGenerator:
         self._draw_footer(c, width)
         c.showPage()
         
-        # ========== PÁGINA 3: ANÁLISE FINANCEIRA (GRÁFICO) ==========
-        self.desenhar_fundo_interno(c, width, height)
-        self._draw_header_logo(c, height)
-        c.setFillColor(self.COLOR_PRIMARY_BLUE)
-        c.setFont(self.FONT_BOLD, self.FONT_SIZE_TITLE)
-        c.drawCentredString(width/2, height - 80, "Análise Financeira")
-
-        y_pos = height - 160  # Aumentado de 140 para 160 para melhor centralização
-        c.setFillColor(self.COLOR_TEXT)
-        c.setFont(self.FONT_BOLD, self.FONT_SIZE_SUBTITLE)
-        c.drawCentredString(width/2, y_pos, "Investimento Total Proposto")
-        y_pos -= 30
-        c.setFillColor(self.COLOR_SUCCESS_GREEN)
-        c.setFont(self.FONT_BOLD, 28)
-        investimento_fmt = f"R$ {dados_sistema.get('investimento', 0):,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
-        c.drawCentredString(width/2, y_pos, investimento_fmt)
-        y_pos -= 25
-        c.setFont(self.FONT_NORMAL, self.FONT_SIZE_BODY_SMALL)
-        c.setFillColor(self.COLOR_TEXT_LIGHT)
-        c.drawCentredString(width/2, y_pos, "*Valor inicial, sujeito a alterações após visita técnica.")
-
-        if dados_payback:
-            grafico_buffer = self.gerar_grafico_payback(dados_payback)
-            img = ImageReader(grafico_buffer)
-            
-            # Define o tamanho e a posição do gráfico
-            grafico_width = width - 80
-            grafico_height = 300
-            x_pos = (width - grafico_width) / 2 # Centraliza na horizontal
-            y_pos_grafico = 185 # Posição Y fixa para centralizar na vertical
-
-            c.drawImage(img, x_pos, y_pos_grafico, width=grafico_width, height=grafico_height, preserveAspectRatio=True)
-
-        self._draw_footer(c, width)
-        c.showPage()
-
-        # ========== PÁGINA 5: RETORNO DO INVESTIMENTO (RESUMO E SALDO) ==========
-        self.desenhar_fundo_interno(c, width, height)
-        self._draw_header_logo(c, height)
-        c.setFillColor(self.COLOR_PRIMARY_BLUE)
-        c.setFont(self.FONT_BOLD, self.FONT_SIZE_TITLE)
-        c.drawCentredString(width/2, height - 80, "Retorno do Investimento (Payback)")
-        
-        y_pos = height - 150
-        c.setFillColor(self.COLOR_TEXT)
-        c.setFont(self.FONT_BOLD, self.FONT_SIZE_SUBTITLE)
-        c.drawCentredString(width/2, y_pos, "Tempo Estimado para Retorno")
-        y_pos -= 30
-        c.setFillColor(self.COLOR_SUCCESS_GREEN)
-        c.setFont(self.FONT_BOLD, 28)
-        c.drawCentredString(width/2, y_pos, f"{payback_anos} anos e {payback_meses} meses")
-
-        y_pos -= self.SPACE_LARGE
-        c.setFillColor(self.COLOR_TEXT)
-        c.setFont(self.FONT_BOLD, self.FONT_SIZE_SUBTITLE)
-        c.drawCentredString(width/2, y_pos, "Projeção de Caixa Acumulado (21 anos)")
-        y_pos -= 30
-        c.setFillColor(self.COLOR_SUCCESS_GREEN)
-        c.setFont(self.FONT_BOLD, 28)
-        c.drawCentredString(width/2, y_pos, f"R$ {economia_total:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'))
-        y_pos -= self.SPACE_MEDIUM
-
-        table_data = [("Ano", "Saldo Acumulado")]
-        dynamic_styles = []
-        for i, item in enumerate(dados_payback[:21]):
-            saldo = item['amortizacao']
-            table_data.append( (str(item['ano']), f"R$ {saldo:,.2f}") )
-            if saldo < 0:
-                dynamic_styles.append(('TEXTCOLOR', (1, i + 1), (1, i + 1), self.COLOR_RED_NEGATIVE))
-
-        table = Table(table_data, colWidths=[150, 250])
-        style = TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), self.COLOR_PRIMARY_BLUE),
-            ('TEXTCOLOR', (0, 0), (-1, 0), self.COLOR_WHITE),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-            ('FONTNAME', (0, 0), (-1, 0), self.FONT_BOLD),
-            ('FONTNAME', (0, 1), (-1, -1), self.FONT_NORMAL),
-            ('GRID', (0, 0), (-1, -1), 1, self.COLOR_BORDER),
-            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [self.COLOR_WHITE, self.COLOR_LIGHT_GRAY_BG]),
-        ])
-        for s in dynamic_styles:
-            style.add(*s)
-        table.setStyle(style)
-        
-        table.wrapOn(c, width - 100, y_pos)
-        table.drawOn(c, (width-400)/2, y_pos - table._height)
-        
-        self._draw_footer(c, width)
-        c.showPage()
-        
-        # ========== PÁGINA 4: ECONOMIA DE ENERGIA (TABELA MENSAL) ==========
-        self.desenhar_fundo_interno(c, width, height)
-        self._draw_header_logo(c, height)
-        c.setFillColor(self.COLOR_PRIMARY_BLUE)
-        c.setFont(self.FONT_BOLD, self.FONT_SIZE_TITLE)
-        c.drawCentredString(width/2, height - 80, "Projeção de Economia Mensal")
-        
-        y_pos = height - 180  # Aumentado de 160 para 180 para melhor centralização
-        
-        table_data = [("Ano", "Economia Média Mensal")]
-        for item in dados_payback[:21]:
-            table_data.append( (str(item['ano']), f"R$ {item['economia_mensal']:,.2f}") )
-
-        table = Table(table_data, colWidths=[150, 250])
-        table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), self.COLOR_PRIMARY_BLUE),
-            ('TEXTCOLOR', (0, 0), (-1, 0), self.COLOR_WHITE),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-            ('FONTNAME', (0, 0), (-1, 0), self.FONT_BOLD),
-            ('FONTNAME', (0, 1), (-1, -1), self.FONT_NORMAL),
-            ('GRID', (0, 0), (-1, -1), 1, self.COLOR_BORDER),
-            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [self.COLOR_WHITE, self.COLOR_LIGHT_GRAY_BG]),
-        ]))
-        
-        table.wrapOn(c, width - 100, y_pos)
-        # Centralizar a tabela horizontalmente (largura total da tabela = 400)
-        table.drawOn(c, (width - 400) / 2, y_pos - table._height)
-        y_pos -= table._height + self.SPACE_MEDIUM
-
-        c.setFont(self.FONT_NORMAL, self.FONT_SIZE_BODY_SMALL)
-        c.setFillColor(self.COLOR_TEXT_LIGHT)
-        c.drawCentredString(width/2, y_pos, "*Cálculos baseados em um reajuste anual médio de 5% na tarifa de energia.")
-        
-        self._draw_footer(c, width)
-        c.showPage()
-        
         # ========== PÁGINA 7: PRAZOS E ASSINATURA ==========
         self.desenhar_fundo_interno(c, width, height)
         self._draw_header_logo(c, height)
@@ -581,7 +560,7 @@ class PDFGenerator:
         y_pos -= self.SPACE_MEDIUM
 
         text_style = ParagraphStyle(name='Terms', fontName=self.FONT_NORMAL, fontSize=self.FONT_SIZE_BODY,
-                                    textColor=self.COLOR_TEXT, leading=self.LINE_SPACING, spaceAfter=self.SPACE_SMALL)
+                                      textColor=self.COLOR_TEXT, leading=self.LINE_SPACING, spaceAfter=self.SPACE_SMALL)
         
         text_items = [
             "<b>Entrega dos Equipamentos:</b> 30 a 60 dias após pagamento da entrada ou valor integral.",
@@ -611,7 +590,7 @@ class PDFGenerator:
             c.line(field_x_start[i], y_pos - 2, width - 70, y_pos - 2)
             y_pos -= self.SPACE_LARGE
         
-        y_pos -= 60 # Ajuste para descer a assinatura
+        y_pos -= 60
         try:
             assinatura_path = os.path.join(self.assets_path, "assinatura_gabriel.png")
             if os.path.exists(assinatura_path):
