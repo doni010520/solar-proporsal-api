@@ -446,7 +446,7 @@ class PDFGenerator:
         c.setFont(self.FONT_BOLD, self.FONT_SIZE_TITLE)
         c.drawCentredString(width/2, height - 80, "Análise Financeira")
 
-        y_pos = height - 140
+        y_pos = height - 160  # Aumentado de 140 para 160 para melhor centralização
         c.setFillColor(self.COLOR_TEXT)
         c.setFont(self.FONT_BOLD, self.FONT_SIZE_SUBTITLE)
         c.drawCentredString(width/2, y_pos, "Investimento Total Proposto")
@@ -463,7 +463,10 @@ class PDFGenerator:
         if dados_payback:
             grafico_buffer = self.gerar_grafico_payback(dados_payback)
             img = ImageReader(grafico_buffer)
-            c.drawImage(img, 40, y_pos - 320, width=width - 80, height=300, preserveAspectRatio=True)
+            # Centralizar o gráfico horizontalmente
+            grafico_width = width - 80
+            x_pos = (width - grafico_width) / 2
+            c.drawImage(img, x_pos, y_pos - 320, width=grafico_width, height=300, preserveAspectRatio=True)
 
         self._draw_footer(c, width)
         c.showPage()
@@ -530,7 +533,7 @@ class PDFGenerator:
         c.setFont(self.FONT_BOLD, self.FONT_SIZE_TITLE)
         c.drawCentredString(width/2, height - 80, "Projeção de Economia Mensal")
         
-        y_pos = height - 160
+        y_pos = height - 180  # Aumentado de 160 para 180 para melhor centralização
         
         table_data = [("Ano", "Economia Média Mensal")]
         for item in dados_payback[:21]:
@@ -549,7 +552,8 @@ class PDFGenerator:
         ]))
         
         table.wrapOn(c, width - 100, y_pos)
-        table.drawOn(c, (width-400)/2, y_pos - table._height)
+        # Centralizar a tabela horizontalmente (largura total da tabela = 400)
+        table.drawOn(c, (width - 400) / 2, y_pos - table._height)
         y_pos -= table._height + self.SPACE_MEDIUM
 
         c.setFont(self.FONT_NORMAL, self.FONT_SIZE_BODY_SMALL)
