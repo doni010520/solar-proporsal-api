@@ -235,18 +235,48 @@ class PDFGenerator:
         return buf
 
 
-    def criar_proposta_completa(self, dados_json, dados_cliente):
+    def criar_proposta_completa(self, dados_json, dados_cliente=None):
         """
         Método principal chamado pela API para criar a proposta completa.
         Redireciona para gerar_pdf mantendo compatibilidade.
         
         Args:
-            dados_json: Lista de dados contendo informações do sistema e payback
-            dados_cliente: Dicionário com informações do cliente (nome, endereço, cpf_cnpj)
+            dados_json: Lista de dados ou dicionário contendo informações do sistema, payback e cliente
+            dados_cliente: (Opcional) Dicionário com informações do cliente (nome, endereço, cpf_cnpj)
+                          Se não fornecido, tenta extrair de dados_json
             
         Returns:
             bytes: Conteúdo do PDF gerado
         """
+        # Se dados_cliente não foi fornecido, tenta extrair de dados_json
+        if dados_cliente is None:
+            # Verifica se dados_json é um dicionário que contém dados_cliente
+            if isinstance(dados_json, dict):
+                if 'dados_cliente' in dados_json:
+                    dados_cliente = dados_json['dados_cliente']
+                    dados_json = dados_json.get('dados_json', dados_json.get('dados_sistema', []))
+                elif 'nome' in dados_json or 'endereco' in dados_json or 'cpf_cnpj' in dados_json:
+                    # dados_json parece conter tanto os dados do sistema quanto do cliente
+                    dados_cliente = {
+                        'nome': dados_json.get('nome', 'Cliente'),
+                        'endereco': dados_json.get('endereco', 'N/A'),
+                        'cpf_cnpj': dados_json.get('cpf_cnpj', 'N/A')
+                    }
+                else:
+                    # Dados do cliente não encontrados, usa valores padrão
+                    dados_cliente = {
+                        'nome': 'Cliente',
+                        'endereco': 'N/A',
+                        'cpf_cnpj': 'N/A'
+                    }
+            else:
+                # dados_json é uma lista, usa valores padrão para cliente
+                dados_cliente = {
+                    'nome': 'Cliente',
+                    'endereco': 'N/A',
+                    'cpf_cnpj': 'N/A'
+                }
+        
         return self.gerar_pdf(dados_json, dados_cliente)
 
     def gerar_pdf(self, dados_json, dados_cliente):
