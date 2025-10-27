@@ -461,12 +461,16 @@ class PDFGenerator:
         c.drawCentredString(width/2, y_pos, "*Valor inicial, sujeito a alterações após visita técnica.")
 
         if dados_payback:
-            grafico_buffer = self.gerar_grafico_payback(dados_payback)
-            img = ImageReader(grafico_buffer)
-            # Centralizar o gráfico horizontalmente
-            grafico_width = width - 80
-            x_pos = (width - grafico_width) / 2
-            c.drawImage(img, x_pos, y_pos - 320, width=grafico_width, height=300, preserveAspectRatio=True)
+            grafico_buffer = self.gerar_grafico_payback(dados_payback)
+            img = ImageReader(grafico_buffer)
+            
+            # Define o tamanho e a posição do gráfico
+            grafico_width = width - 80
+            grafico_height = 300
+            x_pos = (width - grafico_width) / 2 # Centraliza na horizontal
+            y_pos_grafico = 185 # Posição Y fixa para centralizar na vertical
+
+            c.drawImage(img, x_pos, y_pos_grafico, width=grafico_width, height=grafico_height, preserveAspectRatio=True)
 
         self._draw_footer(c, width)
         c.showPage()
