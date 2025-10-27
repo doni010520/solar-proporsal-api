@@ -233,51 +233,36 @@ class PDFGenerator:
         buf.seek(0)
         plt.close(fig)
         return buf
-
-
-    def criar_proposta_completa(self, dados_json, dados_cliente=None):
+    
+    def calcular_payback(self, dados_payback):
+        """Calcula o período de payback"""
+        for i, item in enumerate(dados_payback):
+            if item["amortizacao"] > 0 and i > 0:
+                valor_anterior = dados_payback[i-1]["amortizacao"]
+                if valor_anterior < 0:
+                    diferenca_anual = item["amortizacao"] - valor_anterior
+                    if diferenca_anual > 0:
+                        meses_para_zerar = (abs(valor_anterior) / (diferenca_anual / 12))
+                        anos = i - 1
+                        meses = int(meses_para_zerar)
+                        if meses >= 12:
+                            anos += meses // 12
+                            meses %= 12
+                        return anos, meses
+        return 0, 0
+    
+    def criar_proposta_completa(self, dados):
         """
-        Método principal chamado pela API para criar a proposta completa.
-        Redireciona para gerar_pdf mantendo compatibilidade.
-        
-        Args:
-            dados_json: Lista de dados ou dicionário contendo informações do sistema, payback e cliente
-            dados_cliente: (Opcional) Dicionário com informações do cliente (nome, endereço, cpf_cnpj)
-                          Se não fornecido, tenta extrair de dados_json
-            
-        Returns:
-            bytes: Conteúdo do PDF gerado
+        Método principal que chama gerar_pdf com a estrutura de dados correta.
+        Este é o método que o sistema externo chama.
         """
-        # Se dados_cliente não foi fornecido, tenta extrair de dados_json
-        if dados_cliente is None:
-            # Verifica se dados_json é um dicionário que contém dados_cliente
-            if isinstance(dados_json, dict):
-                if 'dados_cliente' in dados_json:
-                    dados_cliente = dados_json['dados_cliente']
-                    dados_json = dados_json.get('dados_json', dados_json.get('dados_sistema', []))
-                elif 'nome' in dados_json or 'endereco' in dados_json or 'cpf_cnpj' in dados_json:
-                    # dados_json parece conter tanto os dados do sistema quanto do cliente
-                    dados_cliente = {
-                        'nome': dados_json.get('nome', 'Cliente'),
-                        'endereco': dados_json.get('endereco', 'N/A'),
-                        'cpf_cnpj': dados_json.get('cpf_cnpj', 'N/A')
-                    }
-                else:
-                    # Dados do cliente não encontrados, usa valores padrão
-                    dados_cliente = {
-                        'nome': 'Cliente',
-                        'endereco': 'N/A',
-                        'cpf_cnpj': 'N/A'
-                    }
-            else:
-                # dados_json é uma lista, usa valores padrão para cliente
-                dados_cliente = {
-                    'nome': 'Cliente',
-                    'endereco': 'N/A',
-                    'cpf_cnpj': 'N/A'
-                }
+        dados_cliente = {
+            'nome': dados['cliente']['nome'],
+            'endereco': dados['cliente'].get('endereco', 'N/A'),
+            'cpf_cnpj': dados['cliente'].get('cpf_cnpj', 'N/A')
+        }
         
-        return self.gerar_pdf(dados_json, dados_cliente)
+        return self.gerar_pdf(dados['dados_completos'], dados_cliente)
 
     def gerar_pdf(self, dados_json, dados_cliente):
         """
