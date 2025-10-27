@@ -234,6 +234,21 @@ class PDFGenerator:
         plt.close(fig)
         return buf
 
+
+    def criar_proposta_completa(self, dados_json, dados_cliente):
+        """
+        Método principal chamado pela API para criar a proposta completa.
+        Redireciona para gerar_pdf mantendo compatibilidade.
+        
+        Args:
+            dados_json: Lista de dados contendo informações do sistema e payback
+            dados_cliente: Dicionário com informações do cliente (nome, endereço, cpf_cnpj)
+            
+        Returns:
+            bytes: Conteúdo do PDF gerado
+        """
+        return self.gerar_pdf(dados_json, dados_cliente)
+
     def gerar_pdf(self, dados_json, dados_cliente):
         """
         Gera o PDF completo com a NOVA ORDEM:
