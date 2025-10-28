@@ -535,7 +535,7 @@ class PDFGenerator:
         try:
             logos_path = os.path.join(self.assets_path, "logos_fornecedores.png")
             if os.path.exists(logos_path):
-                c.drawImage(logos_path, 60, y_pos - 230, width=width-120, height=300, preserveAspectRatio=True, mask='auto')
+                c.drawImage(logos_path, 60, y_pos - 250, width=width-120, height=300, preserveAspectRatio=True, mask='auto')
         except:
             pass
         
