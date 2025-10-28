@@ -387,7 +387,7 @@ class PDFGenerator:
             grafico_width = width - 80
             grafico_height = 300
             x_pos = (width - grafico_width) / 2
-            y_pos_grafico = 230
+            y_pos_grafico = 240
 
             c.drawImage(img, x_pos, y_pos_grafico, width=grafico_width, height=grafico_height, preserveAspectRatio=True)
 
