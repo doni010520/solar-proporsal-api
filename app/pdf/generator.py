@@ -401,7 +401,7 @@ class PDFGenerator:
         c.setFont(self.FONT_BOLD, self.FONT_SIZE_TITLE)
         c.drawCentredString(width/2, height - 80, "Projeção de Economia Mensal")
         
-        y_pos = height - 180
+        y_pos = height - 220
         
         table_data = [("Ano", "Economia Média Mensal")]
         for item in dados_payback[:21]:
