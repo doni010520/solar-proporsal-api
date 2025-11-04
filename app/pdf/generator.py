@@ -245,7 +245,7 @@ class PDFGenerator:
         c = canvas.Canvas(buffer, pagesize=A4)
         width, height = A4
 
-        # ========== PÁGINA 1: CAPA ==========
+        # ========== PÁGINA 1: CAPA (Ordem mantida) ==========
         try:
             bg_path = os.path.join(self.assets_path, "capa_background.png")
             if os.path.exists(bg_path):
@@ -261,7 +261,7 @@ class PDFGenerator:
         c.drawCentredString(width/2, height/2 - 20, f"PROPOSTA {dados['numero_proposta']}")
         c.showPage()
         
-        # ========== PÁGINA 2: DADOS DO SISTEMA ==========
+        # ========== PÁGINA 2: DADOS DO SISTEMA (Ordem mantida) ==========
         self.desenhar_fundo_interno(c, width, height)
         self._draw_header_logo(c, height)
         c.setFillColor(self.COLOR_PRIMARY_BLUE)
@@ -359,133 +359,7 @@ class PDFGenerator:
         self._draw_footer(c, width)
         c.showPage()
         
-        # ========== PÁGINA 3: ANÁLISE FINANCEIRA (GRÁFICO) ==========
-        self.desenhar_fundo_interno(c, width, height)
-        self._draw_header_logo(c, height)
-        c.setFillColor(self.COLOR_PRIMARY_BLUE)
-        c.setFont(self.FONT_BOLD, self.FONT_SIZE_TITLE)
-        c.drawCentredString(width/2, height - 80, "Análise Financeira")
-
-        y_pos = height - 160
-        c.setFillColor(self.COLOR_TEXT)
-        c.setFont(self.FONT_BOLD, self.FONT_SIZE_SUBTITLE)
-        c.drawCentredString(width/2, y_pos, "Investimento Total Proposto")
-        y_pos -= 30
-        c.setFillColor(self.COLOR_SUCCESS_GREEN)
-        c.setFont(self.FONT_BOLD, 28)
-        investimento_fmt = f"R$ {dados_sistema.get('investimento', 0):,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
-        c.drawCentredString(width/2, y_pos, investimento_fmt)
-        y_pos -= 25
-        c.setFont(self.FONT_NORMAL, self.FONT_SIZE_BODY_SMALL)
-        c.setFillColor(self.COLOR_TEXT_LIGHT)
-        c.drawCentredString(width/2, y_pos, "*Valor inicial, sujeito a alterações após visita técnica.")
-
-        if dados_payback:
-            grafico_buffer = self.gerar_grafico_payback(dados_payback)
-            img = ImageReader(grafico_buffer)
-            
-            grafico_width = width - 80
-            grafico_height = 300
-            x_pos = (width - grafico_width) / 2
-            y_pos_grafico = 240
-
-            c.drawImage(img, x_pos, y_pos_grafico, width=grafico_width, height=grafico_height, preserveAspectRatio=True)
-
-        self._draw_footer(c, width)
-        c.showPage()
-
-        # ========== PÁGINA 4: ECONOMIA DE ENERGIA (TABELA MENSAL) ==========
-        self.desenhar_fundo_interno(c, width, height)
-        self._draw_header_logo(c, height)
-        c.setFillColor(self.COLOR_PRIMARY_BLUE)
-        c.setFont(self.FONT_BOLD, self.FONT_SIZE_TITLE)
-        c.drawCentredString(width/2, height - 80, "Projeção de Economia Mensal")
-        
-        y_pos = height - 220
-        
-        table_data = [("Ano", "Economia Média Mensal")]
-        for item in dados_payback[:21]:
-            table_data.append( (str(item['ano']), f"R$ {item['economia_mensal']:,.2f}") )
-
-        table = Table(table_data, colWidths=[150, 250])
-        table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), self.COLOR_PRIMARY_BLUE),
-            ('TEXTCOLOR', (0, 0), (-1, 0), self.COLOR_WHITE),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-            ('FONTNAME', (0, 0), (-1, 0), self.FONT_BOLD),
-            ('FONTNAME', (0, 1), (-1, -1), self.FONT_NORMAL),
-            ('GRID', (0, 0), (-1, -1), 1, self.COLOR_BORDER),
-            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [self.COLOR_WHITE, self.COLOR_LIGHT_GRAY_BG]),
-        ]))
-        
-        table.wrapOn(c, width - 100, y_pos)
-        table.drawOn(c, (width - 400) / 2, y_pos - table._height)
-        y_pos -= table._height + self.SPACE_MEDIUM
-
-        c.setFont(self.FONT_NORMAL, self.FONT_SIZE_BODY_SMALL)
-        c.setFillColor(self.COLOR_TEXT_LIGHT)
-        c.drawCentredString(width/2, y_pos, "*Cálculos baseados em um reajuste anual médio de 5% na tarifa de energia.")
-        
-        self._draw_footer(c, width)
-        c.showPage()
-        
-        # ========== PÁGINA 5: RETORNO DO INVESTIMENTO (RESUMO E SALDO) ==========
-        self.desenhar_fundo_interno(c, width, height)
-        self._draw_header_logo(c, height)
-        c.setFillColor(self.COLOR_PRIMARY_BLUE)
-        c.setFont(self.FONT_BOLD, self.FONT_SIZE_TITLE)
-        c.drawCentredString(width/2, height - 80, "Retorno do Investimento (Payback)")
-        
-        y_pos = height - 150
-        c.setFillColor(self.COLOR_TEXT)
-        c.setFont(self.FONT_BOLD, self.FONT_SIZE_SUBTITLE)
-        c.drawCentredString(width/2, y_pos, "Tempo Estimado para Retorno")
-        y_pos -= 30
-        c.setFillColor(self.COLOR_SUCCESS_GREEN)
-        c.setFont(self.FONT_BOLD, 28)
-        c.drawCentredString(width/2, y_pos, f"{payback_anos} anos e {payback_meses} meses")
-
-        y_pos -= self.SPACE_LARGE
-        c.setFillColor(self.COLOR_TEXT)
-        c.setFont(self.FONT_BOLD, self.FONT_SIZE_SUBTITLE)
-        c.drawCentredString(width/2, y_pos, "Projeção de Caixa Acumulado (21 anos)")
-        y_pos -= 30
-        c.setFillColor(self.COLOR_SUCCESS_GREEN)
-        c.setFont(self.FONT_BOLD, 28)
-        c.drawCentredString(width/2, y_pos, f"R$ {economia_total:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'))
-        y_pos -= self.SPACE_MEDIUM
-
-        table_data = [("Ano", "Saldo Acumulado")]
-        dynamic_styles = []
-        for i, item in enumerate(dados_payback[:21]):
-            saldo = item['amortizacao']
-            table_data.append( (str(item['ano']), f"R$ {saldo:,.2f}") )
-            if saldo < 0:
-                dynamic_styles.append(('TEXTCOLOR', (1, i + 1), (1, i + 1), self.COLOR_RED_NEGATIVE))
-
-        table = Table(table_data, colWidths=[150, 250])
-        style = TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), self.COLOR_PRIMARY_BLUE),
-            ('TEXTCOLOR', (0, 0), (-1, 0), self.COLOR_WHITE),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-            ('FONTNAME', (0, 0), (-1, 0), self.FONT_BOLD),
-            ('FONTNAME', (0, 1), (-1, -1), self.FONT_NORMAL),
-            ('GRID', (0, 0), (-1, -1), 1, self.COLOR_BORDER),
-            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [self.COLOR_WHITE, self.COLOR_LIGHT_GRAY_BG]),
-        ])
-        for s in dynamic_styles:
-            style.add(*s)
-        table.setStyle(style)
-        
-        table.wrapOn(c, width - 100, y_pos)
-        table.drawOn(c, (width-400)/2, y_pos - table._height)
-        
-        self._draw_footer(c, width)
-        c.showPage()
-        
-        # ========== PÁGINA 6: SERVIÇOS E GARANTIAS ==========
+        # ========== PÁGINA 3: SERVIÇOS E GARANTIAS (Original 6) ==========
         self.desenhar_fundo_interno(c, width, height)
         self._draw_header_logo(c, height)
         c.setFillColor(self.COLOR_PRIMARY_BLUE)
@@ -546,7 +420,133 @@ class PDFGenerator:
         self._draw_footer(c, width)
         c.showPage()
         
-        # ========== PÁGINA 7: PRAZOS E ASSINATURA ==========
+        # ========== PÁGINA 4: ANÁLISE FINANCEIRA (GRÁFICO) (Original 3) ==========
+        self.desenhar_fundo_interno(c, width, height)
+        self._draw_header_logo(c, height)
+        c.setFillColor(self.COLOR_PRIMARY_BLUE)
+        c.setFont(self.FONT_BOLD, self.FONT_SIZE_TITLE)
+        c.drawCentredString(width/2, height - 80, "Análise Financeira")
+
+        y_pos = height - 160
+        c.setFillColor(self.COLOR_TEXT)
+        c.setFont(self.FONT_BOLD, self.FONT_SIZE_SUBTITLE)
+        c.drawCentredString(width/2, y_pos, "Investimento Total Proposto")
+        y_pos -= 30
+        c.setFillColor(self.COLOR_SUCCESS_GREEN)
+        c.setFont(self.FONT_BOLD, 28)
+        investimento_fmt = f"R$ {dados_sistema.get('investimento', 0):,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+        c.drawCentredString(width/2, y_pos, investimento_fmt)
+        y_pos -= 25
+        c.setFont(self.FONT_NORMAL, self.FONT_SIZE_BODY_SMALL)
+        c.setFillColor(self.COLOR_TEXT_LIGHT)
+        c.drawCentredString(width/2, y_pos, "*Valor inicial, sujeito a alterações após visita técnica.")
+
+        if dados_payback:
+            grafico_buffer = self.gerar_grafico_payback(dados_payback)
+            img = ImageReader(grafico_buffer)
+            
+            grafico_width = width - 80
+            grafico_height = 300
+            x_pos = (width - grafico_width) / 2
+            y_pos_grafico = 240
+
+            c.drawImage(img, x_pos, y_pos_grafico, width=grafico_width, height=grafico_height, preserveAspectRatio=True)
+
+        self._draw_footer(c, width)
+        c.showPage()
+        
+        # ========== PÁGINA 5: RETORNO DO INVESTIMENTO (RESUMO E SALDO) (Original 5) ==========
+        self.desenhar_fundo_interno(c, width, height)
+        self._draw_header_logo(c, height)
+        c.setFillColor(self.COLOR_PRIMARY_BLUE)
+        c.setFont(self.FONT_BOLD, self.FONT_SIZE_TITLE)
+        c.drawCentredString(width/2, height - 80, "Retorno do Investimento (Payback)")
+        
+        y_pos = height - 150
+        c.setFillColor(self.COLOR_TEXT)
+        c.setFont(self.FONT_BOLD, self.FONT_SIZE_SUBTITLE)
+        c.drawCentredString(width/2, y_pos, "Tempo Estimado para Retorno")
+        y_pos -= 30
+        c.setFillColor(self.COLOR_SUCCESS_GREEN)
+        c.setFont(self.FONT_BOLD, 28)
+        c.drawCentredString(width/2, y_pos, f"{payback_anos} anos e {payback_meses} meses")
+
+        y_pos -= self.SPACE_LARGE
+        c.setFillColor(self.COLOR_TEXT)
+        c.setFont(self.FONT_BOLD, self.FONT_SIZE_SUBTITLE)
+        c.drawCentredString(width/2, y_pos, "Projeção de Caixa Acumulado (21 anos)")
+        y_pos -= 30
+        c.setFillColor(self.COLOR_SUCCESS_GREEN)
+        c.setFont(self.FONT_BOLD, 28)
+        c.drawCentredString(width/2, y_pos, f"R$ {economia_total:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'))
+        y_pos -= self.SPACE_MEDIUM
+
+        table_data = [("Ano", "Saldo Acumulado")]
+        dynamic_styles = []
+        for i, item in enumerate(dados_payback[:21]):
+            saldo = item['amortizacao']
+            table_data.append( (str(item['ano']), f"R$ {saldo:,.2f}") )
+            if saldo < 0:
+                dynamic_styles.append(('TEXTCOLOR', (1, i + 1), (1, i + 1), self.COLOR_RED_NEGATIVE))
+
+        table = Table(table_data, colWidths=[150, 250])
+        style = TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), self.COLOR_PRIMARY_BLUE),
+            ('TEXTCOLOR', (0, 0), (-1, 0), self.COLOR_WHITE),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('FONTNAME', (0, 0), (-1, 0), self.FONT_BOLD),
+            ('FONTNAME', (0, 1), (-1, -1), self.FONT_NORMAL),
+            ('GRID', (0, 0), (-1, -1), 1, self.COLOR_BORDER),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [self.COLOR_WHITE, self.COLOR_LIGHT_GRAY_BG]),
+        ])
+        for s in dynamic_styles:
+            style.add(*s)
+        table.setStyle(style)
+        
+        table.wrapOn(c, width - 100, y_pos)
+        table.drawOn(c, (width-400)/2, y_pos - table._height)
+        
+        self._draw_footer(c, width)
+        c.showPage()
+        
+        # ========== PÁGINA 6: ECONOMIA DE ENERGIA (TABELA MENSAL) (Original 4) ==========
+        self.desenhar_fundo_interno(c, width, height)
+        self._draw_header_logo(c, height)
+        c.setFillColor(self.COLOR_PRIMARY_BLUE)
+        c.setFont(self.FONT_BOLD, self.FONT_SIZE_TITLE)
+        c.drawCentredString(width/2, height - 80, "Projeção de Economia Mensal")
+        
+        y_pos = height - 220
+        
+        table_data = [("Ano", "Economia Média Mensal")]
+        for item in dados_payback[:21]:
+            table_data.append( (str(item['ano']), f"R$ {item['economia_mensal']:,.2f}") )
+
+        table = Table(table_data, colWidths=[150, 250])
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), self.COLOR_PRIMARY_BLUE),
+            ('TEXTCOLOR', (0, 0), (-1, 0), self.COLOR_WHITE),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('FONTNAME', (0, 0), (-1, 0), self.FONT_BOLD),
+            ('FONTNAME', (0, 1), (-1, -1), self.FONT_NORMAL),
+            ('GRID', (0, 0), (-1, -1), 1, self.COLOR_BORDER),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [self.COLOR_WHITE, self.COLOR_LIGHT_GRAY_BG]),
+        ]))
+        
+        table.wrapOn(c, width - 100, y_pos)
+        table.drawOn(c, (width - 400) / 2, y_pos - table._height)
+        y_pos -= table._height + self.SPACE_MEDIUM
+
+        c.setFont(self.FONT_NORMAL, self.FONT_SIZE_BODY_SMALL)
+        c.setFillColor(self.COLOR_TEXT_LIGHT)
+        c.drawCentredString(width/2, y_pos, "*Cálculos baseados em um reajuste anual médio de 5% na tarifa de energia.")
+        
+        self._draw_footer(c, width)
+        c.showPage()
+        
+        # ========== PÁGINA 7: PRAZOS E ASSINATURA (Original 7) ==========
         self.desenhar_fundo_interno(c, width, height)
         self._draw_header_logo(c, height)
         c.setFillColor(self.COLOR_PRIMARY_BLUE)
