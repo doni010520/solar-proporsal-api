@@ -76,7 +76,7 @@ class PDFGenerator:
         c.saveState()
         c.setFont(self.FONT_NORMAL, self.FONT_SIZE_FOOTER)
         c.setFillColor(self.COLOR_TEXT_LIGHT)
-        c.drawCentredString(width/2, 45, "LEVESOL LTDA CNPJ 44.075.186/0001-11")
+        c.drawCentredString(width/2, 45, "LEVESOL LTDA CNPJ 44.075.186/0001-13")
         c.drawCentredString(width/2, 33, "Avenida Nossa Senhora de Fátima, 11-15, Jardim América, CEP 17017-337, Bauru")
         c.drawCentredString(width/2, 21, "Contato: (14) 99893-7738 | contato@levesol.com.br | www.levesol.com.br")
         c.restoreState()
