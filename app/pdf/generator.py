@@ -370,9 +370,15 @@ class PDFGenerator:
         num_modulos = int(dados_sistema.get('num_modulos', 0))
         potencia_inversor = dados_sistema.get('potencia_inversor', 'N/A')
         
+        # ---> ALTERAÇÃO FEITA AQUI: Adicionar o aviso de módulos se for 3KW
+        texto_inversor = f"{potencia_inversor}KW"
+        if str(potencia_inversor).strip() == "3":
+            texto_inversor = "3KW (ATÉ 9 MÓDULOS)"
+        # ---> FIM DA ALTERAÇÃO
+        
         servicos = [
             (f"{num_modulos} MÓDULOS FOTOVOLTAICOS RISEN / HONOR / SUNX 700W",), 
-            (f"1 INVERSOR SOLAR DEYE / GROWATT / SOLIS {potencia_inversor}KW",),
+            (f"1 INVERSOR SOLAR DEYE / GROWATT / SOLIS {texto_inversor}",),
             ("ESTRUTURA COMPLETA PARA MONTAGEM",), ("PROTEÇÃO E CABEAMENTO CA/CC",), ("HOMOLOGAÇÃO",),
             ("INSTALAÇÃO E MÃO DE OBRA",), ("MONITORAMENTO",), ("FRETE",)
         ]
