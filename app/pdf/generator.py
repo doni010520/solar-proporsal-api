@@ -151,21 +151,21 @@ class PDFGenerator:
                 valor = item.get("col_7")
                 
                 # ALTERAÇÃO: Adicionado "Quantidade de módulos que cabem no inversor" -> "limite_modulos"
-                key_map = {
-                    "Consumo Total Permitido (mês) kwh:": "consumo_atual",
-                    "Quantidade de módulos": "num_modulos",
-                    "Quantidade de módulos necessários": "num_modulos",
-                    "Potência do sistema": "potencia_kwp",
-                    "Potência do inversor": "potencia_inversor",
-                    "Quantidade de módulos que cabem no inversor": "limite_modulos",
-                    "Área total instalada": "area_total",
-                    "Energia Média Gerada (mês)": "geracao_mensal",
-                    "Energia Média Gerada (ano)": "geracao_anual",
-                    "Valor da conta antes": "conta_antes",
-                    "Valor da conta depois": "conta_depois",
-                    "Preço do Sistema": "investimento",
-                    "Padrão do Cliente": "tipo_fornecimento"
-                }
+           key_map = {
+                        "Consumo Total Permitido (mês) kwh:": "consumo_atual",
+                        "Quantidade de módulos que cabem no inversor": "limite_modulos",  # ← ANTES
+                        "Quantidade de módulos necessários": "num_modulos",
+                        "Quantidade de módulos": "num_modulos",  # ← DEPOIS (mais genérica)
+                        "Potência do sistema": "potencia_kwp",
+                        "Potência do inversor": "potencia_inversor",
+                        "Área total instalada": "area_total",
+                        "Energia Média Gerada (mês)": "geracao_mensal",
+                        "Energia Média Gerada (ano)": "geracao_anual",
+                        "Valor da conta antes": "conta_antes",
+                        "Valor da conta depois": "conta_depois",
+                        "Preço do Sistema": "investimento",
+                        "Padrão do Cliente": "tipo_fornecimento"
+                    }
                 for key, mapped_key in key_map.items():
                     if key in campo:
                         dados_sistema[mapped_key] = valor
