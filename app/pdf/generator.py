@@ -150,13 +150,20 @@ class PDFGenerator:
                 campo = item["DADOS DA CONTA DE ENERGIA"]
                 valor = item.get("col_7")
                 
+                # ALTERAÇÃO: Adicionado "Quantidade de módulos que cabem no inversor" -> "limite_modulos"
                 key_map = {
                     "Consumo Total Permitido (mês) kwh:": "consumo_atual",
                     "Quantidade de módulos": "num_modulos",
-                    "Potência do sistema": "potencia_kwp", "Potência do inversor": "potencia_inversor",
-                    "Área total instalada": "area_total", "Energia Média Gerada (mês)": "geracao_mensal",
-                    "Energia Média Gerada (ano)": "geracao_anual", "Valor da conta antes": "conta_antes",
-                    "Valor da conta depois": "conta_depois", "Preço do Sistema": "investimento",
+                    "Quantidade de módulos necessários": "num_modulos",
+                    "Potência do sistema": "potencia_kwp",
+                    "Potência do inversor": "potencia_inversor",
+                    "Quantidade de módulos que cabem no inversor": "limite_modulos",
+                    "Área total instalada": "area_total",
+                    "Energia Média Gerada (mês)": "geracao_mensal",
+                    "Energia Média Gerada (ano)": "geracao_anual",
+                    "Valor da conta antes": "conta_antes",
+                    "Valor da conta depois": "conta_depois",
+                    "Preço do Sistema": "investimento",
                     "Padrão do Cliente": "tipo_fornecimento"
                 }
                 for key, mapped_key in key_map.items():
@@ -359,7 +366,7 @@ class PDFGenerator:
         self._draw_footer(c, width)
         c.showPage()
         
-        # ========== PÁGINA 3: SERVIÇOS E GARANTIAS (Original 6) ==========
+        # ========== PÁGINA 3: SERVIÇOS E GARANTIAS ==========
         self.desenhar_fundo_interno(c, width, height)
         self._draw_header_logo(c, height)
         c.setFillColor(self.COLOR_PRIMARY_BLUE)
@@ -369,12 +376,13 @@ class PDFGenerator:
         y_pos = height - 130
         num_modulos = int(dados_sistema.get('num_modulos', 0))
         potencia_inversor = dados_sistema.get('potencia_inversor', 'N/A')
+        limite_modulos = dados_sistema.get('limite_modulos', None)
         
-        # ---> ALTERAÇÃO FEITA AQUI: Adicionar o aviso de módulos se for 3KW
-        texto_inversor = f"{potencia_inversor}KW"
-        if str(potencia_inversor).strip() == "3":
-            texto_inversor = "3KW (ATÉ 9 MÓDULOS)"
-        # ---> FIM DA ALTERAÇÃO
+        # ALTERAÇÃO: Monta o texto do inversor dinamicamente usando limite_modulos da planilha
+        if limite_modulos:
+            texto_inversor = f"{potencia_inversor}KW ({limite_modulos})"
+        else:
+            texto_inversor = f"{potencia_inversor}KW"
         
         servicos = [
             (f"{num_modulos} MÓDULOS FOTOVOLTAICOS RISEN / HONOR / SUNX 700W",), 
@@ -426,7 +434,7 @@ class PDFGenerator:
         self._draw_footer(c, width)
         c.showPage()
         
-        # ========== PÁGINA 4: ANÁLISE FINANCEIRA (GRÁFICO) (Original 3) ==========
+        # ========== PÁGINA 4: ANÁLISE FINANCEIRA (GRÁFICO) ==========
         self.desenhar_fundo_interno(c, width, height)
         self._draw_header_logo(c, height)
         c.setFillColor(self.COLOR_PRIMARY_BLUE)
@@ -461,7 +469,7 @@ class PDFGenerator:
         self._draw_footer(c, width)
         c.showPage()
         
-        # ========== PÁGINA 5: RETORNO DO INVESTIMENTO (RESUMO E SALDO) (Original 5) ==========
+        # ========== PÁGINA 5: RETORNO DO INVESTIMENTO (RESUMO E SALDO) ==========
         self.desenhar_fundo_interno(c, width, height)
         self._draw_header_logo(c, height)
         c.setFillColor(self.COLOR_PRIMARY_BLUE)
@@ -516,7 +524,7 @@ class PDFGenerator:
         self._draw_footer(c, width)
         c.showPage()
         
-        # ========== PÁGINA 6: ECONOMIA DE ENERGIA (TABELA MENSAL) (Original 4) ==========
+        # ========== PÁGINA 6: ECONOMIA DE ENERGIA (TABELA MENSAL) ==========
         self.desenhar_fundo_interno(c, width, height)
         self._draw_header_logo(c, height)
         c.setFillColor(self.COLOR_PRIMARY_BLUE)
@@ -552,7 +560,7 @@ class PDFGenerator:
         self._draw_footer(c, width)
         c.showPage()
         
-        # ========== PÁGINA 7: PRAZOS E ASSINATURA (Original 7) ==========
+        # ========== PÁGINA 7: PRAZOS E ASSINATURA ==========
         self.desenhar_fundo_interno(c, width, height)
         self._draw_header_logo(c, height)
         c.setFillColor(self.COLOR_PRIMARY_BLUE)
