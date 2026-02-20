@@ -150,22 +150,22 @@ class PDFGenerator:
                 campo = item["DADOS DA CONTA DE ENERGIA"]
                 valor = item.get("col_7")
                 
-                # ALTERAÇÃO: Adicionado "Quantidade de módulos que cabem no inversor" -> "limite_modulos"
-           key_map = {
-                        "Consumo Total Permitido (mês) kwh:": "consumo_atual",
-                        "Quantidade de módulos que cabem no inversor": "limite_modulos",  # ← ANTES
-                        "Quantidade de módulos necessários": "num_modulos",
-                        "Quantidade de módulos": "num_modulos",  # ← DEPOIS (mais genérica)
-                        "Potência do sistema": "potencia_kwp",
-                        "Potência do inversor": "potencia_inversor",
-                        "Área total instalada": "area_total",
-                        "Energia Média Gerada (mês)": "geracao_mensal",
-                        "Energia Média Gerada (ano)": "geracao_anual",
-                        "Valor da conta antes": "conta_antes",
-                        "Valor da conta depois": "conta_depois",
-                        "Preço do Sistema": "investimento",
-                        "Padrão do Cliente": "tipo_fornecimento"
-                    }
+                # IMPORTANTE: Chaves mais específicas PRIMEIRO para evitar match parcial
+                key_map = {
+                    "Quantidade de módulos que cabem no inversor": "limite_modulos",
+                    "Quantidade de módulos necessários": "num_modulos",
+                    "Quantidade de módulos": "num_modulos",
+                    "Consumo Total Permitido (mês) kwh:": "consumo_atual",
+                    "Potência do sistema": "potencia_kwp",
+                    "Potência do inversor": "potencia_inversor",
+                    "Área total instalada": "area_total",
+                    "Energia Média Gerada (mês)": "geracao_mensal",
+                    "Energia Média Gerada (ano)": "geracao_anual",
+                    "Valor da conta antes": "conta_antes",
+                    "Valor da conta depois": "conta_depois",
+                    "Preço do Sistema": "investimento",
+                    "Padrão do Cliente": "tipo_fornecimento"
+                }
                 for key, mapped_key in key_map.items():
                     if key in campo:
                         dados_sistema[mapped_key] = valor
@@ -252,7 +252,7 @@ class PDFGenerator:
         c = canvas.Canvas(buffer, pagesize=A4)
         width, height = A4
 
-        # ========== PÁGINA 1: CAPA (Ordem mantida) ==========
+        # ========== PÁGINA 1: CAPA ==========
         try:
             bg_path = os.path.join(self.assets_path, "capa_background.png")
             if os.path.exists(bg_path):
@@ -268,7 +268,7 @@ class PDFGenerator:
         c.drawCentredString(width/2, height/2 - 20, f"PROPOSTA {dados['numero_proposta']}")
         c.showPage()
         
-        # ========== PÁGINA 2: DADOS DO SISTEMA (Ordem mantida) ==========
+        # ========== PÁGINA 2: DADOS DO SISTEMA ==========
         self.desenhar_fundo_interno(c, width, height)
         self._draw_header_logo(c, height)
         c.setFillColor(self.COLOR_PRIMARY_BLUE)
@@ -378,7 +378,7 @@ class PDFGenerator:
         potencia_inversor = dados_sistema.get('potencia_inversor', 'N/A')
         limite_modulos = dados_sistema.get('limite_modulos', None)
         
-        # ALTERAÇÃO: Monta o texto do inversor dinamicamente usando limite_modulos da planilha
+        # Monta o texto do inversor dinamicamente usando limite_modulos da planilha
         if limite_modulos:
             texto_inversor = f"{potencia_inversor}KW ({limite_modulos})"
         else:
